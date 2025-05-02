@@ -6,9 +6,14 @@ app.get { req async in
         "It works!"
     }
 
-    app.get("hello") { req async -> String in
-        "Hello, world!"
+    try app.group("api") { builder in
+        
+        try builder.register(collection: AuthController())
+        
+        try builder.group(JWTToken.authenticator(), JWTToken.guardMiddleware()) { builder in
+            try builder.register(collection: UserController())
+        }
+        
     }
-
-    try app.register(collection: TodoController())
+    
 }
