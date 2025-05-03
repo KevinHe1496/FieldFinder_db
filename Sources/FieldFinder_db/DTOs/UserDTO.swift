@@ -24,6 +24,7 @@ extension User {
         let id: UUID
         let name: String
         let email: String
+        let rol: RolUsuario
     }
     
     func toPublic() -> User.Public {
@@ -31,7 +32,8 @@ extension User {
             .Public(
                 id: id!,
                 name: name,
-                email: email
+                email: email,
+                rol: rol
             )
     }
 }

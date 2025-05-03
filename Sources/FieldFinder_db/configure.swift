@@ -28,6 +28,8 @@ public func configure(_ app: Application) async throws {
     await app.jwt.keys.add(hmac: hmacKey, digestAlgorithm: .sha512)
     
     app.migrations.add(UserMigration())
+    app.migrations.add(EstablecimientoMigration())
+    app.migrations.add(CanchaMigration())
 
     try await app.autoMigrate()
     // register routes
