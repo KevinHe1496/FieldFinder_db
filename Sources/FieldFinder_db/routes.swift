@@ -13,6 +13,7 @@ app.get { req async in
         try builder.group(JWTToken.authenticator(), JWTToken.guardMiddleware()) { builder in
             try builder.register(collection: UserController())
             try builder.register(collection: EstablecimientoController())
+            try builder.register(collection: CanchaController())
         }
         
     }
