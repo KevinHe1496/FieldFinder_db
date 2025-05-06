@@ -17,6 +17,7 @@ struct EstablecimientoMigration: AsyncMigration {
             .field("cubierta", .bool, .required)
             .field("longitude", .double, .required)
             .field("latitude", .double, .required)
+            .field("phone", .string, .required)
             .field("created_at", .date)
             .field("updated_at", .date)
             .field("user_id", .uuid, .required, .references("users", "id"))

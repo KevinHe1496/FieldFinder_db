@@ -16,9 +16,9 @@ extension Establecimiento {
         let cubierta: Bool
         let latitude: Double
         let longitude: Double
-        let userId: User.IDValue
-        
-        func toModel() -> Establecimiento {
+        let phone: String
+ 
+        func toModel(userId: UUID) -> Establecimiento {
             Establecimiento(
                 name: name,
                 info: info,
@@ -33,6 +33,7 @@ extension Establecimiento {
                 cubierta: cubierta,
                 latitude: latitude,
                 longitude: longitude,
+                phone: phone,
                 userId: userId
             )
         }
@@ -51,27 +52,33 @@ extension Establecimiento {
         let bar: Bool
         let cubierta: Bool
         let canchas: [Cancha.Public]
+        let userName: String
+        let userRol: RolUsuario
+        let phone: String
     }
     
     func toPublic() -> Establecimiento.Public {
         Establecimiento
             .Public(
-            id: self.id!,
-            name: self.name,
-            info: self.info,
-            photo: self.photo,
-            address: self.address,
-            country: self.country,
-            city: self.city,
-            zipCode: self.zipCode,
-            parquedero: self.parqueadero,
-            vestidores: self.vestidores,
-            bar: self.bar,
-            cubierta: self.cubierta,
-            canchas: self.canchas.map({ cancha in
-                cancha.toPublic()
-            })
-        )
+                id: self.id!,
+                name: self.name,
+                info: self.info,
+                photo: self.photo,
+                address: self.address,
+                country: self.country,
+                city: self.city,
+                zipCode: self.zipCode,
+                parquedero: self.parqueadero,
+                vestidores: self.vestidores,
+                bar: self.bar,
+                cubierta: self.cubierta,
+                canchas: self.canchas.map({ cancha in
+                    cancha.toPublic()
+                }),
+                userName: self.user.name,
+                userRol: self.user.rol,
+                phone: self.phone
+            )
         
     }
 }

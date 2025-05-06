@@ -1,54 +1,93 @@
 import Vapor
 import Fluent
 
+/// Controlador encargado de gestionar los establecimientos: registro, obtención y eliminación.
 struct EstablecimientoController: RouteCollection {
     
+    /// Define las rutas bajo `/establecimiento` y las asocia con middlewares y funciones.
     func boot(routes: any RoutesBuilder) throws {
         routes.group("establecimiento") { builder in
-            builder.grouped(RoleMiddleware(requiredRole: .dueno)).post("register",use: crearEstablecimiento)
+            // Ruta protegida: solo dueños pueden registrar establecimientos
+            builder.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
+            
+            // Ruta protegida: solo admins pueden ver todos los establecimientos
             builder.grouped(AdminMiddleware()).get("getEstablecimientos", use: getAllEstablisments)
+            
+            // Ruta pública: obtener establecimiento por ID
+            builder.get(":establecimientoID", use: getEstablecimientoByID)
         }
     }
 }
 
 extension EstablecimientoController {
     
+    /// Registra un nuevo establecimiento para el usuario autenticado con rol dueño.
     @Sendable
     func crearEstablecimiento(req: Request) async throws -> HTTPStatus {
         do {
-            // Decodificamos el cuerpo de la solicitud como `Establecimiento.Create`
+            // 1. Validar y extraer el token del usuario autenticado
+            let token = try req.auth.require(JWTToken.self)
+            guard let userID = UUID(token.userID.value) else {
+                throw Abort(.unauthorized, reason: "Token inválido")
+            }
+
+            // 2. Decodificar los datos enviados en la petición
             let create = try req.content.decode(Establecimiento.Create.self)
             print("Input recibido:", create)
-            // Creamos un nuevo establecimiento usando los datos decodificados
-            let establecimiento = create.toModel()
-            
-            // Guardamos el nuevo establecimiento en la base de datos
+
+            // 3. Crear y guardar el establecimiento con el userID del token
+            let establecimiento = create.toModel(userId: userID)
             try await establecimiento.save(on: req.db)
-            
-            // Retornamos un status 201 (creado)
+
+            // 4. Devolver respuesta HTTP 201 Created
             return .created
         } catch {
-            // Si ocurre un error, lo capturamos y lo mostramos
             print("Error al crear el establecimiento: \(error.localizedDescription)")
             throw Abort(.internalServerError, reason: "No se pudo crear el establecimiento.")
         }
     }
 
+    /// Devuelve todos los establecimientos con sus canchas y el usuario asociado (solo para admins).
     @Sendable
-    // Esta función obtiene todos los establecimientos de la base de datos, junto con sus canchas relacionadas.
     func getAllEstablisments(req: Request) async throws -> [Establecimiento.Public] {
-        
-        // Realiza una consulta a la base de datos para obtener todos los establecimientos,
-        // con las relacion de las canchas
         let establecimientos = try await Establecimiento.query(on: req.db)
-            .with(\.$canchas) // Carga también las canchas asociadas a cada establecimiento.
-            .all()            // Ejecuta la consulta y devuelve todos los resultados.
+            .with(\.$canchas) // Relación 1-N con canchas
+            .with(\.$user)    // Relación con usuario creador
+            .all()
 
-        // Transforma cada establecimiento en su versión pública usando el método toPublic().
-        // Esto sirve para devolver solo la información necesaria y segura para el cliente.
-        return establecimientos.map { establecimiento in
-            establecimiento.toPublic()
-        }
+        return establecimientos.map { $0.toPublic() }
     }
 
+    /// Devuelve los datos de un establecimiento específico por ID, incluyendo canchas y usuario.
+    @Sendable
+    func getEstablecimientoByID(req: Request) async throws -> Establecimiento.Public {
+        guard let id = req.parameters.get("establecimientoID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID inválido.")
+        }
+
+        guard let establecimiento = try await Establecimiento.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "Establecimiento no encontrado.")
+        }
+
+        // Cargar relaciones necesarias antes de convertir a .Public
+        try await establecimiento.$canchas.load(on: req.db)
+        try await establecimiento.$user.load(on: req.db)
+
+        return establecimiento.toPublic()
+    }
+
+    /// Elimina un establecimiento por su ID si existe.
+    @Sendable
+    func deleteEstablecimientoByID(req: Request) async throws -> HTTPStatus {
+        guard let id = req.parameters.get("establecimientoID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID inválido.")
+        }
+
+        guard let establecimiento = try await Establecimiento.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "Establecimiento no encontrado.")
+        }
+
+        try await establecimiento.delete(on: req.db)
+        return .noContent
+    }
 }

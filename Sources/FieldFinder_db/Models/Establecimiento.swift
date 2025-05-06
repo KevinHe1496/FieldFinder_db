@@ -47,6 +47,9 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Field(key: "longitude")
     var longitude: Double
     
+    @Field(key: "phone")
+    var phone: String
+    
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
     
@@ -76,6 +79,7 @@ final class Establecimiento: Model, @unchecked Sendable {
         cubierta: Bool,
         latitude: Double,
         longitude: Double,
+        phone: String,
         userId: User.IDValue
     ) {
         self.id = id
@@ -92,6 +96,7 @@ final class Establecimiento: Model, @unchecked Sendable {
         self.cubierta = cubierta
         self.latitude = latitude
         self.longitude = longitude
+        self.phone = phone
         self.$user.id = userId
     }
 
