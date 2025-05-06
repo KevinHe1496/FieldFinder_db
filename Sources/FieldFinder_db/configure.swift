@@ -7,7 +7,7 @@ import JWT
 // configures your application
 public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     
     guard let jwtKey = Environment.process.JWT_KEY else { fatalError("JWT_KEY not found")}
 
@@ -27,9 +27,12 @@ public func configure(_ app: Application) async throws {
     let hmacKey = HMACKey(stringLiteral: jwtKey)
     await app.jwt.keys.add(hmac: hmacKey, digestAlgorithm: .sha512)
     
+    app.routes.defaultMaxBodySize = "20mb"
     app.migrations.add(UserMigration())
     app.migrations.add(EstablecimientoMigration())
+    app.migrations.add(EstablecimientoFotoMigration())
     app.migrations.add(CanchaMigration())
+    
 
     try await app.autoMigrate()
     // register routes

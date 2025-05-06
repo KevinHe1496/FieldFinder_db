@@ -30,7 +30,7 @@ extension CanchaController {
             print("Input recibido:", create)
             
             // 3. Verifica que el establecimiento exista y pertenezca al usuario autenticado
-            guard let establecimiento = try await Establecimiento.query(on: req.db)
+            guard let _ = try await Establecimiento.query(on: req.db)
                 .filter(\.$id == create.establecimientoId)
                 .filter(\.$user.$id == userID)
                 .first() else {

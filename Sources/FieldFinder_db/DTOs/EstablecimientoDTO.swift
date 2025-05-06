@@ -42,7 +42,7 @@ extension Establecimiento {
         let id: UUID
         let name: String
         let info: String
-        let photo: String
+        let fotos: [String]
         let address: String
         let country: String
         let city: String
@@ -63,7 +63,7 @@ extension Establecimiento {
                 id: self.id!,
                 name: self.name,
                 info: self.info,
-                photo: self.photo,
+                fotos: self.fotos.map { $0.url },
                 address: self.address,
                 country: self.country,
                 city: self.city,

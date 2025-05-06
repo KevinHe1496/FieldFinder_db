@@ -62,6 +62,9 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Children(for: \.$establecimiento)
     var canchas: [Cancha]
     
+    @Children(for: \.$establecimiento)
+    var fotos: [EstablecimientoFoto]
+    
     init() { }
     
     init(
