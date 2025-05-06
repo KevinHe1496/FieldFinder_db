@@ -15,6 +15,7 @@ struct EstablecimientoController: RouteCollection {
             
             // Ruta pública: obtener establecimiento por ID
             builder.get(":establecimientoID", use: getEstablecimientoByID)
+            builder.delete(":establecimientoID", use: deleteEstablecimientoByID)
         }
     }
 }
@@ -79,15 +80,33 @@ extension EstablecimientoController {
     /// Elimina un establecimiento por su ID si existe.
     @Sendable
     func deleteEstablecimientoByID(req: Request) async throws -> HTTPStatus {
+        // 1. Validar que el token JWT esté presente
+        let token = try req.auth.require(JWTToken.self)
+
+        // 2. Obtener el UUID del usuario desde el token
+        guard let userId = UUID(token.userID.value) else {
+            throw Abort(.unauthorized, reason: "Token inválido.")
+        }
+
+        // 3. Obtener el ID del establecimiento desde los parámetros
         guard let id = req.parameters.get("establecimientoID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID inválido.")
         }
 
+        // 4. Buscar el establecimiento en la base de datos
         guard let establecimiento = try await Establecimiento.find(id, on: req.db) else {
             throw Abort(.notFound, reason: "Establecimiento no encontrado.")
         }
 
+        // 5. Verificar que el establecimiento pertenece al usuario autenticado
+        try await establecimiento.$user.load(on: req.db)
+        guard establecimiento.user.id == userId else {
+            throw Abort(.unauthorized, reason: "No puedes eliminar un establecimiento que no te pertenece.")
+        }
+
+        // 6. Eliminar el establecimiento
         try await establecimiento.delete(on: req.db)
         return .noContent
     }
+
 }
