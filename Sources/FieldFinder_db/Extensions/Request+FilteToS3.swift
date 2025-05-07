@@ -11,7 +11,7 @@ extension Request {
     ///   - bucket: Nombre del bucket de S3 (por defecto: "fieldfinder-uploads").
     ///   - folder: Carpeta interna del bucket donde se guardará el archivo.
     /// - Returns: La URL pública del archivo que fue subido.
-    func uploadFileToS3(file: File, bucket: String = "fieldfinder-uploads", folder: String = "establecimiento") async throws -> String {
+    func uploadFileToS3(file: File, bucket: String = "fieldfinder-uploads", folder: String) async throws -> String {
         
         // 1. Se genera un nombre único usando UUID y se mantiene el nombre original del archivo.
         let filename = "\(UUID().uuidString)-\(file.filename)"
@@ -53,7 +53,6 @@ extension Request {
 
         // 9. Se define la solicitud para subir el archivo con acceso público.
         let input = PutObjectInput(
-            acl: .publicRead, // Hace que la imagen sea accesible públicamente.
             body: .data(data), // El contenido del archivo.
             bucket: bucket,    // El bucket destino en S3.
             contentType: file.contentType?.description ?? "image/jpeg", // Tipo MIME del archivo.

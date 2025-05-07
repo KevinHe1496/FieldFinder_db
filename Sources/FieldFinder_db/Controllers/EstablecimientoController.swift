@@ -144,7 +144,7 @@ extension EstablecimientoController {
 
         // 5. Guardar cada archivo usando la extensión reutilizable
         for file in data.files {
-            let publicURL = try await req.saveUploadedFile(file, in: "establecimiento") // 👈 uso directo de la extensión
+            let publicURL = try await req.uploadFileToS3(file: file, folder: "establecimiento") // 👈 sube a S3 con el nombre del folder que pongamos
 
             // 6. Crear y guardar la entidad en la BD
             let foto = EstablecimientoFoto(url: publicURL, establecimientoID: establecimientoID)

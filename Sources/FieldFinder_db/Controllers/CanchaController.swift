@@ -96,8 +96,8 @@ extension CanchaController {
 
         // 9. Iterar sobre los archivos recibidos
         for file in data.files {
-            // 9.1 Guardar el archivo en disco (en carpeta pública "canchas") y obtener su URL pública
-            let publicURL = try await req.saveUploadedFile(file, in: "canchas")
+            // 9.1 Guardar el archivo en S3  y obtener su URL pública
+            let publicURL = try await req.uploadFileToS3(file: file, folder: "cancha") // 👈 sube a S3
 
             // 9.2 Crear una instancia de `CanchaFoto` asociada a la cancha
             let foto = CanchaFoto(url: publicURL, canchaID: canchaID)
