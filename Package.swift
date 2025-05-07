@@ -16,7 +16,9 @@ let package = Package(
         // 🔵 Non-blocking, event-driven networking for Swift. Used for custom executors
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
         // JWT
-        .package(url: "https://github.com/vapor/jwt.git", from: "5.1.0")
+        .package(url: "https://github.com/vapor/jwt.git", from: "5.1.0"),
+        // AWS
+        .package(url: "https://github.com/awslabs/aws-sdk-swift", from: "1.0.0")
     ],
     targets: [
         .executableTarget(
@@ -27,7 +29,10 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
-                .product(name: "JWT", package: "jwt")
+                .product(name: "JWT", package: "jwt"),
+                .product(name: "AWSS3", package: "aws-sdk-swift"),
+                .product(name: "AWSClientRuntime", package: "aws-sdk-swift"),
+                .product(name: "AWSIAM", package: "aws-sdk-swift")
             ],
             swiftSettings: swiftSettings
         ),
