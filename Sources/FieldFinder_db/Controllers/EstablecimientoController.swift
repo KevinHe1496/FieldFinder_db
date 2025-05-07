@@ -10,8 +10,8 @@ struct EstablecimientoController: RouteCollection {
             // Ruta protegida: solo dueños pueden registrar establecimientos
             builder.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
             
-            // Ruta protegida: solo admins pueden ver todos los establecimientos
-            builder.grouped(AdminMiddleware()).get("getEstablecimientos", use: getAllEstablisments)
+            // Ruta protegida: solo jugadores pueden ver todos los establecimientos
+            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getEstablecimientos", use: getAllEstablisments)
             
             // Ruta pública: obtener establecimiento por ID
             builder.get(":establecimientoID", use: getEstablecimientoByID)
@@ -51,9 +51,10 @@ extension EstablecimientoController {
         }
     }
     
-    /// Devuelve todos los establecimientos con sus canchas y el usuario asociado (solo para admins).
+    /// Devuelve todos los establecimientos con sus canchas y el usuario asociado (solo para jugadores).
     @Sendable
     func getAllEstablisments(req: Request) async throws -> [Establecimiento.Public] {
+
         let establecimientos = try await Establecimiento.query(on: req.db)
             .with(\.$canchas) { cancha in
                 cancha.with(\.$fotos)
