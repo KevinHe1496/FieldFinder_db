@@ -14,9 +14,6 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Field(key: "info")
     var info: String
     
-    @Field(key: "photo")
-    var photo: String
-    
     @Field(key: "address")
     var address: String
     
@@ -40,6 +37,12 @@ final class Establecimiento: Model, @unchecked Sendable {
     
     @Field(key: "cubierta")
     var cubierta: Bool
+    
+    @Field(key: "banos")
+    var banos: Bool
+    
+    @Field(key: "duchas")
+    var duchas: Bool
     
     @Field(key: "latitude")
     var latitude: Double
@@ -71,7 +74,6 @@ final class Establecimiento: Model, @unchecked Sendable {
         id: UUID? = nil,
         name: String,
         info: String,
-        photo: String,
         address: String,
         country: String,
         city: String,
@@ -80,6 +82,8 @@ final class Establecimiento: Model, @unchecked Sendable {
         vestidores: Bool,
         bar: Bool,
         cubierta: Bool,
+        banos: Bool,
+        duchas: Bool,
         latitude: Double,
         longitude: Double,
         phone: String,
@@ -88,7 +92,6 @@ final class Establecimiento: Model, @unchecked Sendable {
         self.id = id
         self.name = name
         self.info = info
-        self.photo = photo
         self.address = address
         self.country = country
         self.city = city
@@ -97,6 +100,8 @@ final class Establecimiento: Model, @unchecked Sendable {
         self.vestidores = vestidores
         self.bar = bar
         self.cubierta = cubierta
+        self.banos = banos
+        self.duchas = duchas
         self.latitude = latitude
         self.longitude = longitude
         self.phone = phone

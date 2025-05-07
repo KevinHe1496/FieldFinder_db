@@ -7,7 +7,6 @@ struct CanchaMigration: AsyncMigration {
             .field("tipo", .string, .required)
             .field("modalidad", .string, .required)
             .field("precio", .double, .required)
-            .field("photo", .string, .required)
             .field("created_at", .date)
             .field("updated_at", .date)
             .field("establecimiento_id", .uuid, .required, .references("establecimientos", "id"))

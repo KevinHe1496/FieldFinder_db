@@ -5,7 +5,6 @@ extension Establecimiento {
     struct Create: Content {
         let name: String
         let info: String
-        let photo: String
         let address: String
         let country: String
         let city: String
@@ -14,6 +13,8 @@ extension Establecimiento {
         let vestidores: Bool
         let bar: Bool
         let cubierta: Bool
+        let banos: Bool
+        let duchas: Bool
         let latitude: Double
         let longitude: Double
         let phone: String
@@ -22,7 +23,6 @@ extension Establecimiento {
             Establecimiento(
                 name: name,
                 info: info,
-                photo: photo,
                 address: address,
                 country: country,
                 city: city,
@@ -31,6 +31,8 @@ extension Establecimiento {
                 vestidores: vestidores,
                 bar: bar,
                 cubierta: cubierta,
+                banos: banos,
+                duchas: duchas,
                 latitude: latitude,
                 longitude: longitude,
                 phone: phone,
@@ -51,6 +53,8 @@ extension Establecimiento {
         let vestidores: Bool
         let bar: Bool
         let cubierta: Bool
+        let banos: Bool
+        let duchas: Bool
         let canchas: [Cancha.Public]
         let userName: String
         let userRol: RolUsuario
@@ -72,6 +76,8 @@ extension Establecimiento {
                 vestidores: self.vestidores,
                 bar: self.bar,
                 cubierta: self.cubierta,
+                banos: self.banos,
+                duchas: self.duchas,
                 canchas: self.canchas.map({ cancha in
                     cancha.toPublic()
                 }),

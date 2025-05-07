@@ -7,7 +7,7 @@ extension Cancha {
         let tipo: TipoCancha
         let modalidad: String
         let precio: Double
-        let photo: String
+
         let establecimientoId: Establecimiento.IDValue
         
         func toModel() -> Cancha {
@@ -15,7 +15,6 @@ extension Cancha {
                 tipo: tipo,
                 modalidad: modalidad,
                 precio: precio,
-                photo: photo,
                 establecimientoId: establecimientoId
             )
         }

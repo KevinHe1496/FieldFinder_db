@@ -22,9 +22,6 @@ final class Cancha: Model, @unchecked Sendable {
     @Field(key: "precio")
     var precio: Double
     
-    @Field(key: "photo")
-    var photo: String
-    
     @Parent(key: "establecimiento_id")
     var establecimiento: Establecimiento
     
@@ -45,14 +42,12 @@ final class Cancha: Model, @unchecked Sendable {
         tipo: TipoCancha,
         modalidad: String,
         precio: Double,
-        photo: String,
         establecimientoId: Establecimiento.IDValue
     ) {
         self.id = id
         self.tipo = tipo
         self.modalidad = modalidad
         self.precio = precio
-        self.photo = photo
         self.$establecimiento.id = establecimientoId
     }
 }
