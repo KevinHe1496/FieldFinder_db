@@ -26,7 +26,8 @@ extension Cancha {
         let tipo: TipoCancha
         let modalidad: String
         let precio: Double
-        let photo: String
+        let fotos: [String]
+        
     }
     
     func toPublic() -> Cancha.Public {
@@ -36,7 +37,7 @@ extension Cancha {
                 tipo: tipo,
                 modalidad: modalidad,
                 precio: precio,
-                photo: photo
+                fotos: fotos.map { $0.url }
             )
     }
 }

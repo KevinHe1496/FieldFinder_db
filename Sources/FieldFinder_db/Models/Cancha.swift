@@ -34,6 +34,10 @@ final class Cancha: Model, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
     
+    @Children(for: \.$cancha)
+    var fotos: [CanchaFoto]
+
+    
     init() { }
     
     init(

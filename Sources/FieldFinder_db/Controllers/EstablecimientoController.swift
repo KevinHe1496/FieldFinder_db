@@ -55,7 +55,9 @@ extension EstablecimientoController {
     @Sendable
     func getAllEstablisments(req: Request) async throws -> [Establecimiento.Public] {
         let establecimientos = try await Establecimiento.query(on: req.db)
-            .with(\.$canchas) // Relación 1-N con canchas
+            .with(\.$canchas) { cancha in
+                cancha.with(\.$fotos)
+            } // Relación 1-N con canchas y sus fotos
             .with(\.$user)    // Relación con usuario creador
             .with(\.$fotos) // Relacion con fotos
             .all()
@@ -116,63 +118,42 @@ extension EstablecimientoController {
     
     @Sendable
     func uploadFotosEstablecimientoHandler(req: Request) async throws -> HTTPStatus {
-        // 1. Validar que el token JWT esté presente
+        // 1. Validar el token y obtener el usuario
         let token = try req.auth.require(JWTToken.self)
-        
-        // 2. Obtener el UUID del usuario desde el token
         guard let userId = UUID(token.userID.value) else {
             throw Abort(.unauthorized, reason: "Token inválido.")
         }
-        
-        // 1. Obtener el ID del establecimiento desde los parámetros de la ruta
+
+        // 2. Obtener ID del establecimiento desde la URL
         guard let establecimientoID = req.parameters.get("establecimientoID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID del establecimiento inválido.")
         }
-        
-        // 🔐 Verifica que el establecimiento exista y sea del usuario autenticado
+
+        // 3. Verificar que el establecimiento exista y pertenezca al usuario
         guard let establecimiento = try await Establecimiento.find(establecimientoID, on: req.db),
               establecimiento.$user.id == userId else {
             throw Abort(.notFound, reason: "Establecimiento no encontrado o no autorizado.")
         }
-        
-        // 2. Estructura auxiliar para decodificar el array de archivos recibidos en multipart/form-data
+
+        // 4. Decodificar archivos recibidos
         struct FileUpload: Content {
-            var files: [File] // Este campo debe coincidir con el nombre del campo del formulario en el frontend
+            var files: [File]
         }
-        
-        // 3. Decodificar los archivos recibidos desde la petición HTTP
+
         let data = try req.content.decode(FileUpload.self)
-        
-        // 4. Definir la carpeta donde se guardarán los archivos (dentro de /Public/uploads/)
-        let folder = req.application.directory.publicDirectory + "uploads/"
-        
-        // 5. Crear la carpeta "uploads" si no existe, incluyendo directorios intermedios
-        try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
-        
-        // 6. Iterar sobre cada archivo recibido
+
+        // 5. Guardar cada archivo usando la extensión reutilizable
         for file in data.files {
-            // 6.1 Crear un nombre único para el archivo usando un UUID
-            let filename = "\(UUID().uuidString)-\(file.filename)"
-            
-            // 6.2 Construir la ruta completa del archivo a guardar
-            let path = folder + filename
-            
-            // 6.3 Guardar el archivo en el disco usando FileIO
-            try await req.fileio.writeFile(file.data, at: path)
-            
-            // 6.4 Crear la URL pública con la que se podrá acceder al archivo desde el frontend
-            let publicURL = "/uploads/" + filename
-            
-            // 6.5 Crear un nuevo registro en la tabla establecimiento_fotos
+            let publicURL = try await req.saveUploadedFile(file, in: "establecimiento") // 👈 uso directo de la extensión
+
+            // 6. Crear y guardar la entidad en la BD
             let foto = EstablecimientoFoto(url: publicURL, establecimientoID: establecimientoID)
-            
-            // 6.6 Guardar la foto en la base de datos
             try await foto.save(on: req.db)
         }
-        
-        // 7. Retornar un estado HTTP 201 Created al finalizar correctamente
+
         return .created
     }
+
     
     @Sendable
     func getFotosEstablecimientoHandler(req: Request) async throws -> [String] {
@@ -194,6 +175,4 @@ extension EstablecimientoController {
         // Devuelve solo los URLs
         return fotos.map { $0.url }
     }
-
-
 }
