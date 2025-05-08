@@ -18,6 +18,7 @@ struct EstablecimientoController: RouteCollection {
             builder.delete(":establecimientoID", use: deleteEstablecimientoByID)
             builder.post(":establecimientoID", "fotos", use: uploadFotosEstablecimientoHandler)
             builder.get(":establecimientoID", "fotos", use: getFotosEstablecimientoHandler)
+            builder.post("nearby", use: getNearbyEstablecimientos)
 
         }
     }
@@ -176,4 +177,42 @@ extension EstablecimientoController {
         // Devuelve solo los URLs
         return fotos.map { $0.url }
     }
+    //Método para ver los establecimientos en la zona del jugador
+    @Sendable
+    func getNearbyEstablecimientos(req: Request) async throws -> [Establecimiento.Public] {
+        
+        //Decodificamos la localización del jugador desde el JSON
+        let location = try req.content.decode(LocationDTO.self)
+        
+        //Obtenemos todos los establecimientos
+        let allEstablishments = try await Establecimiento.query(on: req.db).all()
+        
+        //Filtramos solo los que estan a 10km o menos usando Haversine
+        let nearbyEstablishments = allEstablishments.filter { establishment in
+            let distance = haversineDistance(
+                lat1: location.latitude,
+                lon1: location.longitude,
+                lat2: establishment.latitude,
+                lon2: establishment.longitude
+            )
+            return distance <= 10 // KM
+        }
+        return nearbyEstablishments.map { $0.toPublic() }
+    }
+}
+
+
+//MARK: Método Haversine para filtrar la distancia del consumidor con 10km de radio para recibir restaurantes
+func haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
+    let earthRadius = 6371.0
+    let dLat = (lat2 - lat1) * .pi / 180
+    let dLon = (lon2 - lon1) * .pi / 180
+    
+    let a = pow(sin(dLat / 2), 2)
+          + cos(lat1 * .pi / 180)
+          * cos(lat2 * .pi / 180)
+          * pow(sin(dLon / 2), 2)
+    
+    let c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return earthRadius * c
 }
