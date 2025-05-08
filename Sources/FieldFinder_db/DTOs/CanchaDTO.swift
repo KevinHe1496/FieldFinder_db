@@ -7,6 +7,8 @@ extension Cancha {
         let tipo: TipoCancha
         let modalidad: String
         let precio: Double
+        let iluminada: Bool
+        let cubierta: Bool
 
         let establecimientoId: Establecimiento.IDValue
         
@@ -15,6 +17,8 @@ extension Cancha {
                 tipo: tipo,
                 modalidad: modalidad,
                 precio: precio,
+                iluminada: iluminada,
+                cubierta: cubierta,
                 establecimientoId: establecimientoId
             )
         }
@@ -25,6 +29,8 @@ extension Cancha {
         let tipo: TipoCancha
         let modalidad: String
         let precio: Double
+        let iluminada: Bool
+        let cubierta: Bool
         let fotos: [String]
         
     }
@@ -36,6 +42,8 @@ extension Cancha {
                 tipo: tipo,
                 modalidad: modalidad,
                 precio: precio,
+                iluminada: iluminada,
+                cubierta: cubierta,
                 fotos: fotos.map { $0.url }
             )
     }

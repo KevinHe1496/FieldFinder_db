@@ -12,7 +12,6 @@ extension Establecimiento {
         let parqueadero: Bool
         let vestidores: Bool
         let bar: Bool
-        let cubierta: Bool
         let banos: Bool
         let duchas: Bool
         let latitude: Double
@@ -30,7 +29,6 @@ extension Establecimiento {
                 parqueadero: parqueadero,
                 vestidores: vestidores,
                 bar: bar,
-                cubierta: cubierta,
                 banos: banos,
                 duchas: duchas,
                 latitude: latitude,
@@ -52,7 +50,6 @@ extension Establecimiento {
         let parquedero: Bool
         let vestidores: Bool
         let bar: Bool
-        let cubierta: Bool
         let banos: Bool
         let duchas: Bool
         let canchas: [Cancha.Public]
@@ -75,7 +72,6 @@ extension Establecimiento {
                 parquedero: self.parqueadero,
                 vestidores: self.vestidores,
                 bar: self.bar,
-                cubierta: self.cubierta,
                 banos: self.banos,
                 duchas: self.duchas,
                 canchas: self.canchas.map({ cancha in

@@ -35,9 +35,6 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Field(key: "bar")
     var bar: Bool
     
-    @Field(key: "cubierta")
-    var cubierta: Bool
-    
     @Field(key: "banos")
     var banos: Bool
     
@@ -81,7 +78,6 @@ final class Establecimiento: Model, @unchecked Sendable {
         parqueadero: Bool,
         vestidores: Bool,
         bar: Bool,
-        cubierta: Bool,
         banos: Bool,
         duchas: Bool,
         latitude: Double,
@@ -99,7 +95,6 @@ final class Establecimiento: Model, @unchecked Sendable {
         self.parqueadero = parqueadero
         self.vestidores = vestidores
         self.bar = bar
-        self.cubierta = cubierta
         self.banos = banos
         self.duchas = duchas
         self.latitude = latitude

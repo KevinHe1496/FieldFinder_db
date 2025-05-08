@@ -22,6 +22,12 @@ final class Cancha: Model, @unchecked Sendable {
     @Field(key: "precio")
     var precio: Double
     
+    @Field(key: "iluminada")
+    var iluminada: Bool
+    
+    @Field(key: "cubierta")
+    var cubierta: Bool
+    
     @Parent(key: "establecimiento_id")
     var establecimiento: Establecimiento
     
@@ -42,12 +48,16 @@ final class Cancha: Model, @unchecked Sendable {
         tipo: TipoCancha,
         modalidad: String,
         precio: Double,
+        iluminada: Bool,
+        cubierta: Bool,
         establecimientoId: Establecimiento.IDValue
     ) {
         self.id = id
         self.tipo = tipo
         self.modalidad = modalidad
         self.precio = precio
+        self.iluminada = iluminada
+        self.cubierta = cubierta
         self.$establecimiento.id = establecimientoId
     }
 }

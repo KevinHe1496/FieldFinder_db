@@ -13,7 +13,6 @@ struct EstablecimientoMigration: AsyncMigration {
             .field("parqueadero", .bool, .required)
             .field("vestidores", .bool, .required)
             .field("bar", .bool, .required)
-            .field("cubierta", .bool, .required)
             .field("banos", .bool, .required)
             .field("duchas", .bool, .required)
             .field("longitude", .double, .required)

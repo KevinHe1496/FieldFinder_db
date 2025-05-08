@@ -28,29 +28,43 @@ extension EstablecimientoController {
     
     /// Registra un nuevo establecimiento para el usuario autenticado con rol dueño.
     @Sendable
-    func crearEstablecimiento(req: Request) async throws -> HTTPStatus {
-        do {
-            // 1. Validar y extraer el token del usuario autenticado
+    func crearEstablecimiento(req: Request) async throws -> Establecimiento.Public {
+   
+            // 1. Obtener y validar el token JWT del usuario autenticado
             let token = try req.auth.require(JWTToken.self)
             guard let userID = UUID(token.userID.value) else {
                 throw Abort(.unauthorized, reason: "Token inválido")
             }
-            
-            // 2. Decodificar los datos enviados en la petición
+
+            // 2. Decodificar el contenido enviado en el body de la petición (formato JSON)
             let create = try req.content.decode(Establecimiento.Create.self)
-            print("Input recibido:", create)
-            
-            // 3. Crear y guardar el establecimiento con el userID del token
+
+            // 3. Convertir los datos del formulario a un modelo de Establecimiento y asociarle el userID
             let establecimiento = create.toModel(userId: userID)
+
+            // 4. Guardar el establecimiento recién creado en la base de datos
             try await establecimiento.save(on: req.db)
-            
-            // 4. Devolver respuesta HTTP 201 Created
-            return .created
-        } catch {
-            print("Error al crear el establecimiento: \(error.localizedDescription)")
-            throw Abort(.internalServerError, reason: "No se pudo crear el establecimiento.")
-        }
+
+            // 5. Volver a consultar el establecimiento recién creado desde la base de datos,
+            // usando el id generado automáticamente, y cargando sus relaciones (user, canchas y fotos)
+            let savedEstablecimiento = try await Establecimiento.query(on: req.db)
+                .filter(\.$id == establecimiento.id!) // Filtrar solo por el id del establecimiento recién guardado
+                .with(\.$canchas) { cancha in         // Cargar las canchas relacionadas
+                    cancha.with(\.$fotos)             // Y también las fotos de cada cancha
+                }
+                .with(\.$user)                        // Cargar la relación con el usuario dueño
+                .with(\.$fotos)                       // Cargar las fotos asociadas directamente al establecimiento
+                .first()                              // Obtener el primer (y único) resultado de esa búsqueda
+
+            // 6. Validar que realmente se encontró el establecimiento
+            guard let fullEstablecimiento = savedEstablecimiento else {
+                throw Abort(.internalServerError, reason: "No se pudo cargar el establecimiento creado.")
+            }
+
+            // 7. Convertir el modelo cargado a su representación pública (DTO) y retornarlo como respuesta
+            return fullEstablecimiento.toPublic()
     }
+
     
     /// Devuelve todos los establecimientos con sus canchas y el usuario asociado (solo para jugadores).
     @Sendable
