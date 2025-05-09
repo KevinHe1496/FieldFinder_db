@@ -7,7 +7,7 @@ struct UserController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         routes.group("users") { users in
             // Ruta GET /users/:id → obtener el usuario autenticado mediante token
-            users.get(":id", use: getMe)
+            users.get("me", use: getMe)
             
             // Ruta GET /users → lista de todos los usuarios (solo para admins)
             users.grouped(AdminMiddleware()).get(use: index)
