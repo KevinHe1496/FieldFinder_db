@@ -29,7 +29,7 @@ extension UserController {
             throw Abort(.notFound, reason: "Usuario no encontrado")
         }
 
-        // Devolvemos su representación pública
+        // Devolvemos la información de user pública
         return myUser.toPublic()
     }
     
