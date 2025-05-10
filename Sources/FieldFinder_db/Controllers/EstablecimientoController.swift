@@ -11,15 +11,15 @@ struct EstablecimientoController: RouteCollection {
             builder.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
             
             // Ruta protegida: solo jugadores pueden ver todos los establecimientos
-            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getEstablecimientos", use: getAllEstablisments)
+            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getAll", "Establecimientos", use: getAllEstablisments)
             
             // Ruta pública: obtener establecimiento por ID
             builder.get(":establecimientoID", use: getEstablecimientoByID)
-            builder.delete(":establecimientoID", use: deleteEstablecimientoByID)
-            builder.post(":establecimientoID", "fotos", use: uploadFotosEstablecimientoHandler)
-            builder.get(":establecimientoID", "fotos", use: getFotosEstablecimientoHandler)
+            builder.delete("delete", ":establecimientoID", use: deleteEstablecimientoByID)
+            builder.post("fotos", ":establecimientoID", use: uploadFotosEstablecimientoHandler)
+            builder.get("fotos", ":establecimientoID", use: getFotosEstablecimientoHandler)
             builder.post("nearby", use: getNearbyEstablecimientos)
-            builder.grouped(RoleMiddleware(requiredRole: .dueno)).put(":establecimientoID", use: updateEstlecimiento)
+            builder.grouped(RoleMiddleware(requiredRole: .dueno)).put("update", ":establecimientoID", use: updateEstlecimiento)
             
         }
     }
@@ -273,12 +273,12 @@ extension EstablecimientoController {
             .first()
 
         // 9. Verificar que se haya podido cargar correctamente el establecimiento actualizado
-        guard let fullEstablecimiento = getEstablecimiento else {
-            throw Abort(.internalServerError, reason: "No se pudo cargar el establecimiento.")
+        guard let updateEstablecimiento = getEstablecimiento else {
+            throw Abort(.internalServerError, reason: "No se pudo cargar el establecimiento actualizado.")
         }
 
         // 10. Retornar la representación pública del establecimiento actualizado
-        return fullEstablecimiento.toPublic()
+        return updateEstablecimiento.toPublic()
     }
 }
 

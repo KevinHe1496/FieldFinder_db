@@ -9,9 +9,12 @@ struct CanchaController: RouteCollection {
         routes.group("cancha") { builder in
             // Ruta POST /cancha/register para crear una nueva cancha
             builder.post("register", use: createCancha)
-            builder.post(":canchaID", "fotos", use: uploadFotosCanchaHandler)
+            builder.post("fotos", ":canchaID", use: uploadFotosCanchaHandler)
             builder.get(":canchaID", use: getCanchaByID)
-            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getCanchas", use: getAllCanchas)
+            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getAll", "Canchas", use: getAllCanchas)
+            builder.delete("delete", ":canchaID", use: deleteCanchaByID)
+            builder.put("update",":canchaID", use: updateCancha)
+            builder.get("fotos", ":canchaID", use: getFotosCanchaHandler)
         }
     }
 }
@@ -98,7 +101,88 @@ extension CanchaController {
         return canchas.map { $0.toPublic() }
     }
 
+    /// Elimina una cancha específica por su ID, si existe en la base de datos.
+    /// - Returns: Código HTTP 204 (No Content) si la eliminación fue exitosa.
+    @Sendable
+    func deleteCanchaByID(req: Request) async throws -> HTTPStatus {
+        // 1. Validar el token y obtener el usuario
+        let token = try req.auth.require(JWTToken.self)
+        guard let _ = UUID(token.userID.value) else {
+            throw Abort(.unauthorized, reason: "Token inválido.")
+        }
+        
+        // 2. Obtener el parámetro "canchaID" desde la URL y convertirlo a UUID
+        guard let id = req.parameters.get("canchaID", as: UUID.self) else {
+            // Si el ID no es válido o no se encuentra, lanzar error 400
+            throw Abort(.badRequest, reason: "ID inválido.")
+        }
+        
+        // 3. Buscar la cancha en la base de datos
+        guard let cancha = try await Cancha.find(id, on: req.db) else {
+            // Si la cancha no existe, lanzar error 404
+            throw Abort(.notFound, reason: "Cancha no encontrada.")
+        }
+        
+        // 4. Cargar las relaciones (opcional si necesitas lógica adicional con fotos)
+        try await cancha.$fotos.load(on: req.db)
+        
+        // 5. Eliminar la cancha de la base de datos
+        try await cancha.delete(on: req.db)
+        
+        // 6. Retornar HTTP 204 (sin contenido)
+        return .noContent
+    }
     
+    /// Actualiza una cancha existente si pertenece a un establecimiento del usuario autenticado.
+    /// - Returns: La representación pública de la cancha actualizada.
+    @Sendable
+    func updateCancha(req: Request) async throws -> Cancha.Public {
+        
+        // 1. Validar el token y obtener el usuario
+        let token = try req.auth.require(JWTToken.self)
+        guard let userId = UUID(token.userID.value) else {
+            throw Abort(.unauthorized, reason: "Token inválido.")
+        }
+
+        // 2. Obtener el ID de la cancha desde los parámetros
+        guard let canchaID = req.parameters.get("canchaID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID de la cancha inválido.")
+        }
+
+        // 3. Buscar la cancha en la base de datos
+        guard let cancha = try await Cancha.find(canchaID, on: req.db) else {
+            throw Abort(.notFound, reason: "Cancha no encontrada.")
+        }
+
+        // 4. Cargar el establecimiento y el usuario dueño
+        try await cancha.$establecimiento.load(on: req.db)
+        try await cancha.establecimiento.$user.load(on: req.db)
+
+        // 5. Verificar que el usuario autenticado sea el dueño
+        guard cancha.establecimiento.user.id == userId else {
+            throw Abort(.unauthorized, reason: "No tienes permiso para modificar esta cancha.")
+        }
+
+        // 6. Decodificar los nuevos datos
+        let updateData = try req.content.decode(Cancha.Create.self)
+
+        // 7. Actualizar los campos
+        cancha.tipo = updateData.tipo
+        cancha.modalidad = updateData.modalidad
+        cancha.precio = updateData.precio
+        cancha.iluminada = updateData.iluminada
+        cancha.cubierta = updateData.cubierta
+
+        // 8. Guardar los cambios
+        try await cancha.update(on: req.db)
+
+        // 9. Recargar relaciones necesarias
+        try await cancha.$fotos.load(on: req.db)
+
+        // 10. Retornar la representación pública
+        return cancha.toPublic()
+    }
+
     @Sendable
     func uploadFotosCanchaHandler(req: Request) async throws -> HTTPStatus {
         
@@ -152,6 +236,22 @@ extension CanchaController {
         return .created
     }
     
-    
-
+    @Sendable
+    func getFotosCanchaHandler(req: Request) async throws -> [String] {
+        // 3. Obtener el ID de la cancha desde los parámetros de la URL
+        guard let canchaID = req.parameters.get("canchaID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID de la cancha inválido.")
+        }
+        // Verifica que la cancha exista (opcional pero recomendable)
+        guard let _ = try await Cancha.find(canchaID, on: req.db) else {
+            throw Abort(.notFound, reason: "Cancha no encontrado.")
+        }
+        // Obtiene todas las fotos relacionadas
+        let fotos = try await CanchaFoto.query(on: req.db)
+            .filter(\.$cancha.$id == canchaID)
+            .all()
+        
+        // Devuelve solo los URLs
+        return fotos.map { $0.url }
+    }
 }
