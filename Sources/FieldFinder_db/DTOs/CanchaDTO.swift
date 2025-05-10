@@ -9,7 +9,6 @@ extension Cancha {
         let precio: Double
         let iluminada: Bool
         let cubierta: Bool
-
         let establecimientoId: Establecimiento.IDValue
         
         func toModel() -> Cancha {
@@ -33,6 +32,14 @@ extension Cancha {
         let cubierta: Bool
         let fotos: [String]
         
+    }
+    
+    struct Update: Content {
+        let tipo: TipoCancha
+        let modalidad: String
+        let precio: Double
+        let iluminada: Bool
+        let cubierta: Bool
     }
     
     func toPublic() -> Cancha.Public {

@@ -243,7 +243,7 @@ extension EstablecimientoController {
         }
 
         // 5. Decodificar los nuevos datos enviados en el cuerpo de la petición
-        let updateData = try req.content.decode(Establecimiento.Create.self)
+        let updateData = try req.content.decode(Establecimiento.Update.self)
 
         // 6. Actualizar los campos del modelo con los nuevos valores
         establecimiento.name = updateData.name

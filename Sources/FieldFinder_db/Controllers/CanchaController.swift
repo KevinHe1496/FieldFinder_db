@@ -164,7 +164,7 @@ extension CanchaController {
         }
 
         // 6. Decodificar los nuevos datos
-        let updateData = try req.content.decode(Cancha.Create.self)
+        let updateData = try req.content.decode(Cancha.Update.self)
 
         // 7. Actualizar los campos
         cancha.tipo = updateData.tipo

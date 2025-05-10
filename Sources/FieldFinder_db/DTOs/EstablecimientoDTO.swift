@@ -58,6 +58,23 @@ extension Establecimiento {
         let phone: String
     }
     
+    struct Update: Content {
+        let name: String
+        let info: String
+        let address: String
+        let country: String
+        let city: String
+        let zipCode: String
+        let parqueadero: Bool
+        let vestidores: Bool
+        let bar: Bool
+        let banos: Bool
+        let duchas: Bool
+        let latitude: Double
+        let longitude: Double
+        let phone: String
+    }
+    
     func toPublic() -> Establecimiento.Public {
         Establecimiento
             .Public(
