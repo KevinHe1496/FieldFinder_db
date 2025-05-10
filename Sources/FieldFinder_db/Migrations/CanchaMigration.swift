@@ -11,7 +11,7 @@ struct CanchaMigration: AsyncMigration {
             .field("cubierta", .bool, .required)
             .field("created_at", .date)
             .field("updated_at", .date)
-            .field("establecimiento_id", .uuid, .required, .references("establecimientos", "id"))
+            .field("establecimiento_id", .uuid, .required, .references("establecimientos", "id", onDelete: .cascade))
             .create()
         
     }

@@ -20,7 +20,7 @@ struct EstablecimientoMigration: AsyncMigration {
             .field("phone", .string, .required)
             .field("created_at", .date)
             .field("updated_at", .date)
-            .field("user_id", .uuid, .required, .references("users", "id"))
+            .field("user_id", .uuid, .required, .references("users", "id", onDelete: .cascade))
             .create()
     }
     
