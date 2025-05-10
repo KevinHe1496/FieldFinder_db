@@ -37,6 +37,9 @@ final class User: Model, @unchecked Sendable {
     @Children(for: \.$user)
     var establecimientos: [Establecimiento]
     
+    @Siblings(through: UserFavorite.self, from: \.$user, to: \.$establecimiento)
+    var favoritos: [Establecimiento]
+    
     init() {}
     
     init(id: UUID? = nil, name: String, email: String, password: String, rol: RolUsuario, isAdmin: Bool = false) {

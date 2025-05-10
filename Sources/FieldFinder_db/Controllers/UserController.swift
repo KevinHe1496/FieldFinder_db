@@ -7,15 +7,15 @@ struct UserController: RouteCollection {
     /// Define las rutas bajo `/users` y aplica middlewares según el caso.
     func boot(routes: any RoutesBuilder) throws {
         routes.group("users") { users in
-            // Ruta GET /users/:id → obtener el usuario autenticado mediante token
             users.get("me", use: getMe)
-            
-            // Ruta GET /users → lista de todos los usuarios (solo para admins)
             users.grouped(AdminMiddleware()).get(use: index)
-            
             users.put("update", "me", use: updateMe)
-            
             users.delete("delete", "me", use: deleteMe)
+            users.group("favoritos") { favoritos in
+                favoritos.get(use: getMisFavoritos)
+                favoritos.post(":establecimientoID", use: marcarFavorito) // POST /users/favoritos/:id
+                favoritos.delete("delete",":establecimientoID", use: eliminarFavorito) // DELETE /users/favoritos/:id
+            }
         }
     }
 }
@@ -61,7 +61,7 @@ extension UserController {
         // 5. Devolver la representación pública del usuario
         return currentUser.toPublic()
     }
-
+    
     
     /// Devuelve la lista completa de usuarios, con sus establecimientos, canchas, visible solo para administradores.
     @Sendable
@@ -156,5 +156,76 @@ extension UserController {
         return .noContent
     }
     
-    
+    /// Marca un establecimiento como favorito para el usuario autenticado.
+    /// - Parameters: Ningún parámetro en el body. El `establecimientoID` viene en la URL.
+    /// - Returns: HTTP 201 (Created) si el establecimiento fue marcado como favorito.
+    @Sendable
+    func marcarFavorito(req: Request) async throws -> HTTPStatus {
+        // 1. Validar el token y obtener el usuario autenticado
+        let token = try req.auth.require(JWTToken.self)
+        guard let userID = UUID(token.userID.value),
+              let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.unauthorized)
+        }
+
+        // 2. Obtener el ID del establecimiento desde la URL y validarlo
+        guard let establecimientoID = req.parameters.get("establecimientoID", as: UUID.self),
+              let establecimiento = try await Establecimiento.find(establecimientoID, on: req.db) else {
+            throw Abort(.notFound, reason: "Establecimiento no encontrado")
+        }
+
+        // 3. Asociar el establecimiento al usuario como favorito
+        try await user.$favoritos.attach(establecimiento, on: req.db)
+
+        // 4. Retornar HTTP 201 (Created)
+        return .created
+    }
+
+
+    /// Elimina un establecimiento de los favoritos del usuario autenticado.
+    /// - Parameters: Ningún parámetro en el body. El `establecimientoID` viene en la URL.
+    /// - Returns: HTTP 204 (No Content) si se elimina correctamente.
+    @Sendable
+    func eliminarFavorito(req: Request) async throws -> HTTPStatus {
+        // 1. Validar el token y obtener el usuario autenticado
+        let token = try req.auth.require(JWTToken.self)
+        guard let userID = UUID(token.userID.value),
+              let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.unauthorized)
+        }
+
+        // 2. Obtener el ID del establecimiento desde la URL y validarlo
+        guard let establecimientoID = req.parameters.get("establecimientoID", as: UUID.self),
+              let establecimiento = try await Establecimiento.find(establecimientoID, on: req.db) else {
+            throw Abort(.notFound, reason: "Establecimiento no encontrado")
+        }
+
+        // 3. Eliminar la relación de favorito entre el usuario y el establecimiento
+        try await user.$favoritos.detach(establecimiento, on: req.db)
+
+        // 4. Retornar HTTP 204 (No Content)
+        return .noContent
+    }
+
+
+    /// Devuelve todos los establecimientos marcados como favoritos por el usuario autenticado.
+    /// - Returns: Un array de `Establecimiento.FavoriteDTO` con los favoritos del usuario.
+    @Sendable
+    func getMisFavoritos(req: Request) async throws -> [Establecimiento.FavoriteDTO] {
+        // 1. Validar el token y obtener el usuario autenticado
+        let token = try req.auth.require(JWTToken.self)
+        guard let userID = UUID(token.userID.value),
+              let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.unauthorized)
+        }
+
+        // 2. Consultar los establecimientos favoritos del usuario y cargar sus fotos
+        let favoritos = try await user.$favoritos.query(on: req.db)
+            .with(\.$fotos)
+            .all()
+
+        // 3. Convertir cada establecimiento a su DTO de favorito y devolverlos
+        return favoritos.map { $0.toFavoriteDTO() }
+    }
+
 }

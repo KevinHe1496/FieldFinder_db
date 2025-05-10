@@ -100,4 +100,20 @@ extension Establecimiento {
             )
         
     }
+    
+    struct FavoriteDTO: Content {
+        let id: UUID
+        let name: String
+        let address: String
+        let fotos: [String]
+    }
+
+    func toFavoriteDTO() -> FavoriteDTO {
+        FavoriteDTO(
+            id: self.id!,
+            name: self.name,
+            address: self.address,
+            fotos: self.fotos.map { $0.url }
+        )
+    }
 }

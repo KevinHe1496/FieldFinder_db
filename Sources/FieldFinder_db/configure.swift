@@ -33,6 +33,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(EstablecimientoFotoMigration())
     app.migrations.add(CanchaMigration())
     app.migrations.add(CanchaFotoMigration())
+    app.migrations.add(UserFavoriteMigration())
 
     
 
