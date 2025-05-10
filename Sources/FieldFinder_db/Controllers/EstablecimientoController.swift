@@ -218,32 +218,33 @@ extension EstablecimientoController {
     /// Actualiza un establecimiento existente si pertenece al usuario autenticado.
     @Sendable
     func updateEstlecimiento(req: Request) async throws -> Establecimiento.Public {
-        // 1. Validar el token y obtener el usuario
+        
+        // 1. Validar el token JWT y obtener el ID del usuario autenticado
         let token = try req.auth.require(JWTToken.self)
         guard let userId = UUID(token.userID.value) else {
             throw Abort(.unauthorized, reason: "Token inválido.")
         }
-        
-        // 2. Obtener el ID del establecimiento desde la URL
+
+        // 2. Obtener el ID del establecimiento desde los parámetros de la URL
         guard let establecimientoID = req.parameters.get("establecimientoID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID del establecimiento inválido.")
         }
-        
-        // 3. Buscar el establecimiento en la base de datos por el ID
+
+        // 3. Buscar el establecimiento en la base de datos usando su ID
         guard let establecimiento = try await Establecimiento.find(establecimientoID, on: req.db) else {
             throw Abort(.notFound, reason: "Establecimiento no encontrado.")
         }
-        
-        // 4. Verificar que el establecimiento pertenece al usuario
+
+        // 4. Verificar que el establecimiento pertenece al usuario autenticado
         try await establecimiento.$user.load(on: req.db)
         guard establecimiento.user.id == userId else {
             throw Abort(.unauthorized, reason: "No puedes modificar un establecimiento que no te pertenece.")
         }
-        
-        // 5. Decodificar el nuevo contenido (formato JSON)
+
+        // 5. Decodificar los nuevos datos enviados en el cuerpo de la petición
         let updateData = try req.content.decode(Establecimiento.Create.self)
-        
-        // 6. Actualizar los campos del modelo
+
+        // 6. Actualizar los campos del modelo con los nuevos valores
         establecimiento.name = updateData.name
         establecimiento.info = updateData.info
         establecimiento.address = updateData.address
@@ -256,11 +257,11 @@ extension EstablecimientoController {
         establecimiento.banos = updateData.banos
         establecimiento.duchas = updateData.duchas
         establecimiento.phone = updateData.phone
-        
-        // 7. Guardar los cambios en la base de datos
+
+        // 7. Guardar los cambios actualizados en la base de datos
         try await establecimiento.update(on: req.db)
-        
-        // 8. Obtenemos nuestro establecimiento actualizado con todas sus relaciones
+
+        // 8. Volver a consultar el establecimiento actualizado, incluyendo sus relaciones
         let getEstablecimiento = try await Establecimiento.query(on: req.db)
             .filter(\.$id == establecimiento.id!)
             .with(\.$canchas) { cancha in
@@ -269,13 +270,13 @@ extension EstablecimientoController {
             .with(\.$user)
             .with(\.$fotos)
             .first()
-        
-        // 9. Verificamos si se cargo el establecimiento
+
+        // 9. Verificar que se haya podido cargar correctamente el establecimiento actualizado
         guard let fullEstablecimiento = getEstablecimiento else {
             throw Abort(.internalServerError, reason: "No se pudo cargar el establecimiento.")
         }
-        
-        // 10. Retornar el establecimiento actualizado en formato público
+
+        // 10. Retornar la representación pública del establecimiento actualizado
         return fullEstablecimiento.toPublic()
     }
 }
