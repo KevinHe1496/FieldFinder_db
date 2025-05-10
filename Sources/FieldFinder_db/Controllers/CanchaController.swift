@@ -101,37 +101,51 @@ extension CanchaController {
         return canchas.map { $0.toPublic() }
     }
 
-    /// Elimina una cancha específica por su ID, si existe en la base de datos.
-    /// - Returns: Código HTTP 204 (No Content) si la eliminación fue exitosa.
+    /// Elimina una cancha específica por su ID si pertenece a un establecimiento del usuario autenticado.
+    /// También elimina todas sus fotos asociadas.
+    /// - Returns: HTTP 204 (No Content) si la eliminación fue exitosa.
     @Sendable
     func deleteCanchaByID(req: Request) async throws -> HTTPStatus {
-        // 1. Validar el token y obtener el usuario
+        // 1. Validar el token y obtener el usuario autenticado
         let token = try req.auth.require(JWTToken.self)
-        guard let _ = UUID(token.userID.value) else {
+        guard let userId = UUID(token.userID.value) else {
             throw Abort(.unauthorized, reason: "Token inválido.")
         }
-        
-        // 2. Obtener el parámetro "canchaID" desde la URL y convertirlo a UUID
-        guard let id = req.parameters.get("canchaID", as: UUID.self) else {
-            // Si el ID no es válido o no se encuentra, lanzar error 400
-            throw Abort(.badRequest, reason: "ID inválido.")
+
+        // 2. Obtener el ID de la cancha desde los parámetros de la URL
+        guard let canchaID = req.parameters.get("canchaID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID de cancha inválido.")
         }
-        
-        // 3. Buscar la cancha en la base de datos
-        guard let cancha = try await Cancha.find(id, on: req.db) else {
-            // Si la cancha no existe, lanzar error 404
+
+        // 3. Buscar la cancha por ID
+        guard let cancha = try await Cancha.find(canchaID, on: req.db) else {
             throw Abort(.notFound, reason: "Cancha no encontrada.")
         }
+
+        // 4. Cargar el establecimiento al que pertenece la cancha
+        try await cancha.$establecimiento.load(on: req.db)
         
-        // 4. Cargar las relaciones (opcional si necesitas lógica adicional con fotos)
+        // 5. Cargar el usuario dueño del establecimiento
+        try await cancha.establecimiento.$user.load(on: req.db)
+
+        // 6. Validar que el usuario autenticado sea el dueño del establecimiento
+        guard cancha.establecimiento.user.id == userId else {
+            throw Abort(.unauthorized, reason: "No tienes permiso para eliminar esta cancha.")
+        }
+
+        // 7. Cargar y eliminar todas las fotos asociadas a la cancha
         try await cancha.$fotos.load(on: req.db)
-        
-        // 5. Eliminar la cancha de la base de datos
+        for foto in cancha.fotos {
+            try await foto.delete(on: req.db)
+        }
+
+        // 8. Eliminar la cancha
         try await cancha.delete(on: req.db)
-        
-        // 6. Retornar HTTP 204 (sin contenido)
+
+        // 9. Retornar HTTP 204 (sin contenido)
         return .noContent
     }
+
     
     /// Actualiza una cancha existente si pertenece a un establecimiento del usuario autenticado.
     /// - Returns: La representación pública de la cancha actualizada.
