@@ -23,12 +23,15 @@ extension CanchaController {
     
     /// Crea una nueva cancha asociada a un establecimiento del usuario autenticado, validando propiedad y guardando la cancha.
     @Sendable
-    func createCancha(req: Request) async throws -> Cancha.Public {
+    func createCancha(req: Request) async throws -> HTTPStatus {
         
-        // 1. Verifica el token del usuario autenticado
+        // 1. Extraer el token JWT del request (cabecera Authorization)
         let token = try req.auth.require(JWTToken.self)
-        guard let userID = UUID(token.userID.value) else {
-            throw Abort(.unauthorized, reason: "Token inválido")
+        
+        // 2. Obtener el ID del usuario a partir del token
+        guard let userId = UUID(token.userID.value),
+              let _ = try await User.find(userId, on: req.db) else {
+            throw Abort(.notFound, reason: "Usuario no encontrado")
         }
         
         // 2. Decodifica el cuerpo de la solicitud con el contenido enviado
@@ -36,32 +39,19 @@ extension CanchaController {
         print("Input recibido:", create)
         
         // 3. Verifica que el establecimiento exista y pertenezca al usuario autenticado
-        guard let _ = try await Establecimiento.query(on: req.db)
-            .filter(\.$id == create.establecimientoId)
-            .filter(\.$user.$id == userID)
+        guard let establecimiento = try await Establecimiento.query(on: req.db)
+            .filter(\.$user.$id == userId)
             .first() else {
             throw Abort(.unauthorized, reason: "No puedes registrar canchas en un establecimiento que no te pertenece.")
         }
         
         // 4. Crea una nueva instancia del modelo Cancha a partir del DTO
-        let cancha = create.toModel()
+        let cancha = create.toModel(establecimientoID: try establecimiento.requireID())
         
         // 5. Guarda la cancha en la base de datos
         try await cancha.save(on: req.db)
         
-        // 6. Volver a consultar la cancha recién creado desde la base de datos,
-        // usando el id generado automáticamente, y cargando sus relaciones (fotos)
-        let savedCancha = try await Cancha.query(on: req.db)
-            .filter(\.$id == cancha.id!)
-            .with(\.$fotos)
-            .first()
-        
-        // 7. Validar que realmente se encontró la cancha
-        guard let fullCancha = savedCancha else {
-            throw Abort(.internalServerError, reason: "No se pudo cargar la cancha creada.")
-        }
-        
-        return fullCancha.toPublic()
+        return .created
     }
     
     /// Devuelve los datos de un establecimiento específico por ID, incluyendo las fotos.
