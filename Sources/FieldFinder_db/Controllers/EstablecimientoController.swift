@@ -102,37 +102,60 @@ extension EstablecimientoController {
         return establecimiento.toPublic()
     }
     
-    /// Elimina un establecimiento por su ID si existe.
+    /// Elimina un establecimiento por su ID, junto con sus canchas y fotos asociadas.
+    /// - Returns: HTTP 204 si se elimina correctamente.
     @Sendable
     func deleteEstablecimientoByID(req: Request) async throws -> HTTPStatus {
-        // 1. Validar que el token JWT esté presente
+        // 1. Validar el token JWT
         let token = try req.auth.require(JWTToken.self)
-        
-        // 2. Obtener el UUID del usuario desde el token
         guard let userId = UUID(token.userID.value) else {
             throw Abort(.unauthorized, reason: "Token inválido.")
         }
-        
-        // 3. Obtener el ID del establecimiento desde los parámetros
+
+        // 2. Obtener el ID del establecimiento desde la URL
         guard let id = req.parameters.get("establecimientoID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID inválido.")
         }
+
+        // 3. Buscar el establecimiento
+        let establecimiento = try await Establecimiento.query(on: req.db)
+            .filter(\.$id == id)
+            .with(\.$user)
+            .with(\.$fotos)
+            .with(\.$canchas) { cancha in
+                cancha.with(\.$fotos)
+            }
+            .first()
         
-        // 4. Buscar el establecimiento en la base de datos
-        guard let establecimiento = try await Establecimiento.find(id, on: req.db) else {
+        // 4. Nos aseguramos que el establecimiento exista.
+        guard let currentEstablecimiento = establecimiento else {
             throw Abort(.notFound, reason: "Establecimiento no encontrado.")
         }
-        
-        // 5. Verificar que el establecimiento pertenece al usuario autenticado
-        try await establecimiento.$user.load(on: req.db)
-        guard establecimiento.user.id == userId else {
+
+        // 5. Verificar que el establecimiento pertenezca al usuario autenticado
+        guard currentEstablecimiento.user.id == userId else {
             throw Abort(.unauthorized, reason: "No puedes eliminar un establecimiento que no te pertenece.")
         }
-        
-        // 6. Eliminar el establecimiento
-        try await establecimiento.delete(on: req.db)
+
+        // 6. Eliminar fotos de cada cancha
+        for cancha in currentEstablecimiento.canchas {
+            for foto in cancha.fotos {
+                try await foto.delete(on: req.db)
+            }
+            try await cancha.delete(on: req.db)
+        }
+
+        // 7. Eliminar fotos del establecimiento
+        for foto in currentEstablecimiento.fotos {
+            try await foto.delete(on: req.db)
+        }
+
+        // 8. Eliminar el establecimiento
+        try await currentEstablecimiento.delete(on: req.db)
+
         return .noContent
     }
+
     
     @Sendable
     func uploadFotosEstablecimientoHandler(req: Request) async throws -> HTTPStatus {
