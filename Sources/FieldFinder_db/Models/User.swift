@@ -34,6 +34,9 @@ final class User: Model, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
     
+    @Children(for: \.$user)
+    var establecimientos: [Establecimiento]
+    
     init() {}
     
     init(id: UUID? = nil, name: String, email: String, password: String, rol: RolUsuario, isAdmin: Bool = false) {

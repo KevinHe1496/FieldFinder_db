@@ -25,6 +25,7 @@ extension User {
         let name: String
         let email: String
         let rol: RolUsuario
+        let establecimiento: [Establecimiento.Public]
     }
     
     func toPublic() -> User.Public {
@@ -33,7 +34,8 @@ extension User {
                 id: id!,
                 name: name,
                 email: email,
-                rol: rol
+                rol: rol,
+                establecimiento: self.establecimientos.map { $0.toPublic() }
             )
     }
     
