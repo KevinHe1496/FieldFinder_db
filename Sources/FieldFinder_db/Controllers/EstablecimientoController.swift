@@ -71,6 +71,7 @@ extension EstablecimientoController {
     @Sendable
     func getAllEstablisments(req: Request) async throws -> [Establecimiento.Public] {
         
+        // 1. Consultar todos los establecimientos desde la base de datos con sus relaciones de canchas, user, fotos.
         let establecimientos = try await Establecimiento.query(on: req.db)
             .with(\.$canchas) { cancha in
                 cancha.with(\.$fotos)
@@ -78,7 +79,7 @@ extension EstablecimientoController {
             .with(\.$user)    // Relación con usuario creador
             .with(\.$fotos) // Relacion con fotos
             .all()
-        
+        // 7. Convertir cada establecimiento al formato público y retornar el resultado
         return establecimientos.map { $0.toPublic() }
     }
     

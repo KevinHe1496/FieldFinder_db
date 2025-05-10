@@ -11,6 +11,7 @@ struct CanchaController: RouteCollection {
             builder.post("register", use: createCancha)
             builder.post(":canchaID", "fotos", use: uploadFotosCanchaHandler)
             builder.get(":canchaID", use: getCanchaByID)
+            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getCanchas", use: getAllCanchas)
         }
     }
 }
@@ -59,6 +60,44 @@ extension CanchaController {
         
         return fullCancha.toPublic()
     }
+    
+    /// Devuelve los datos de un establecimiento específico por ID, incluyendo las fotos.
+    @Sendable
+    func getCanchaByID(req: Request) async throws -> Cancha.Public {
+        
+        // 1. Intentar obtener el parámetro "canchaID" desde la URL, y convertirlo a UUID
+        guard let id = req.parameters.get("canchaID", as: UUID.self) else {
+            // Si no se puede obtener o convertir, lanzar un error 400 (Bad Request)
+            throw Abort(.badRequest, reason: "ID inválido.")
+        }
+        
+        // 2. Buscar en la base de datos la cancha con ese ID
+        guard let cancha = try await Cancha.find(id, on: req.db) else {
+            // Si no se encuentra la cancha, lanzar un error 404 (Not Found)
+            throw Abort(.notFound, reason: "Cancha no encontrada.")
+        }
+        
+        // 3. Cargar las relaciones necesarias (en este caso, las fotos asociadas a la cancha)
+        try await cancha.$fotos.load(on: req.db)
+        
+        // 4. Convertir el modelo Cancha a su representación pública (DTO) y devolverlo como respuesta
+        return cancha.toPublic()
+    }
+    
+    /// Devuelve una lista de todas las canchas registradas, incluyendo sus fotos asociadas.
+    /// - Returns: Un arreglo de canchas en su representación pública (DTO).
+    @Sendable
+    func getAllCanchas(req: Request) async throws -> [Cancha.Public] {
+        
+        // 1. Consultar todas las canchas desde la base de datos, incluyendo la relación con sus fotos
+        let canchas = try await Cancha.query(on: req.db)
+            .with(\.$fotos) // Relación 1-N: una cancha puede tener varias fotos
+            .all()
+        
+        // 2. Convertir cada cancha al formato público y retornar la lista
+        return canchas.map { $0.toPublic() }
+    }
+
     
     @Sendable
     func uploadFotosCanchaHandler(req: Request) async throws -> HTTPStatus {
@@ -113,27 +152,6 @@ extension CanchaController {
         return .created
     }
     
-    /// Devuelve los datos de un establecimiento específico por ID, incluyendo las fotos.
-    @Sendable
-    func getCanchaByID(req: Request) async throws -> Cancha.Public {
-        
-        // 1. Intentar obtener el parámetro "canchaID" desde la URL, y convertirlo a UUID
-        guard let id = req.parameters.get("canchaID", as: UUID.self) else {
-            // Si no se puede obtener o convertir, lanzar un error 400 (Bad Request)
-            throw Abort(.badRequest, reason: "ID inválido.")
-        }
-        
-        // 2. Buscar en la base de datos la cancha con ese ID
-        guard let cancha = try await Cancha.find(id, on: req.db) else {
-            // Si no se encuentra la cancha, lanzar un error 404 (Not Found)
-            throw Abort(.notFound, reason: "Cancha no encontrada.")
-        }
-        
-        // 3. Cargar las relaciones necesarias (en este caso, las fotos asociadas a la cancha)
-        try await cancha.$fotos.load(on: req.db)
-        
-        // 4. Convertir el modelo Cancha a su representación pública (DTO) y devolverlo como respuesta
-        return cancha.toPublic()
-    }
+    
 
 }
