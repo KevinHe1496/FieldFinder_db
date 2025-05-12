@@ -86,6 +86,11 @@ extension EstablecimientoController {
         try await establecimiento.$user.load(on: req.db)
         try await establecimiento.$fotos.load(on: req.db)
         
+        // Cargar las fotos de cada cancha relacionada
+        for cancha in establecimiento.canchas {
+            try await cancha.$fotos.load(on: req.db)
+        }
+        
         return establecimiento.toPublic()
     }
     
