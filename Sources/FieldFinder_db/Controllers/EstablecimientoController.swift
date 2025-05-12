@@ -211,7 +211,13 @@ extension EstablecimientoController {
         let location = try req.content.decode(LocationDTO.self)
         
         //Obtenemos todos los establecimientos
-        let allEstablishments = try await Establecimiento.query(on: req.db).all()
+        let allEstablishments = try await Establecimiento.query(on: req.db)
+            .with(\.$canchas) { cancha in
+                cancha.with(\.$fotos)
+            } // Relación 1-N con canchas y sus fotos
+            .with(\.$user)    // Relación con usuario creador
+            .with(\.$fotos) // Relacion con fotos
+            .all()
         
         //Filtramos solo los que estan a 10km o menos usando Haversine
         let nearbyEstablishments = allEstablishments.filter { establishment in
