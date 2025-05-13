@@ -55,6 +55,8 @@ extension Establecimiento {
         let canchas: [Cancha.Public]
         let userName: String
         let userRol: RolUsuario
+        let latitude: Double
+        let longitude: Double
         let phone: String
     }
     
@@ -96,6 +98,8 @@ extension Establecimiento {
                 }),
                 userName: self.user.name,
                 userRol: self.user.rol,
+                latitude: self.latitude,
+                longitude: self.longitude,
                 phone: self.phone
             )
         
