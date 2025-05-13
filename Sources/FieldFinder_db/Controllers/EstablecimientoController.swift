@@ -11,7 +11,7 @@ struct EstablecimientoController: RouteCollection {
             builder.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
             
             // Ruta protegida: solo jugadores pueden ver todos los establecimientos
-            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getAll", "Establecimientos", use: getAllEstablisments)
+            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getAll", "favoritos", use: getFavoritesEstablisments)
             
             // Ruta pública: obtener establecimiento por ID
             builder.get(":establecimientoID", use: getEstablecimientoByID)
@@ -56,18 +56,26 @@ extension EstablecimientoController {
     
     /// Devuelve todos los establecimientos con sus canchas y el usuario asociado (solo para jugadores).
     @Sendable
-    func getAllEstablisments(req: Request) async throws -> [Establecimiento.Public] {
+    func getFavoritesEstablisments(req: Request) async throws -> [Establecimiento.FavoriteDTO] {
         
-        // 1. Consultar todos los establecimientos desde la base de datos con sus relaciones de canchas, user, fotos.
+        // 1. Validar el token JWT y obtener el usuario autenticado
+        let token = try req.auth.require(JWTToken.self)
+        guard let userId = UUID(token.userID.value),
+              let user = try await User.find(userId, on: req.db) else {
+            throw Abort(.unauthorized)
+        }
+        
+        // 2. Consultar todos los establecimientos desde la base de datos con sus relaciones de canchas, user, fotos.
         let establecimientos = try await Establecimiento.query(on: req.db)
-            .with(\.$canchas) { cancha in
-                cancha.with(\.$fotos)
-            } // Relación 1-N con canchas y sus fotos
-            .with(\.$user)    // Relación con usuario creador
             .with(\.$fotos) // Relacion con fotos
             .all()
-        // 7. Convertir cada establecimiento al formato público y retornar el resultado
-        return establecimientos.map { $0.toPublic() }
+        
+        // 3. Cargar los favoritos del usuario
+        let favoritos = try await user.$favoritos.query(on: req.db).all()
+        let favoritosIds = Set(favoritos.compactMap { $0.id })
+        
+        // 4. Mapear a DTO incluyendo isFavorite dinámico
+        return establecimientos.map { $0.toFavoriteDTO(isFavorite: favoritosIds.contains($0.id!))}
     }
     
     /// Devuelve los datos de un establecimiento específico por ID, incluyendo canchas y usuario.

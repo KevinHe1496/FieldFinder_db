@@ -14,7 +14,7 @@ struct UserController: RouteCollection {
             users.group("favoritos") { favoritos in
                 favoritos.get(use: getMisFavoritos)
                 favoritos.post(":establecimientoID", use: marcarFavorito) // POST /users/favoritos/:id
-                favoritos.delete("delete",":establecimientoID", use: eliminarFavorito) // DELETE /users/favoritos/:id
+                favoritos.delete(":establecimientoID", use: eliminarFavorito) // DELETE /users/favoritos/:id
             }
         }
     }
@@ -202,6 +202,7 @@ extension UserController {
 
         // 3. Eliminar la relación de favorito entre el usuario y el establecimiento
         try await user.$favoritos.detach(establecimiento, on: req.db)
+        
 
         // 4. Retornar HTTP 204 (No Content)
         return .noContent
@@ -223,9 +224,10 @@ extension UserController {
         let favoritos = try await user.$favoritos.query(on: req.db)
             .with(\.$fotos)
             .all()
+        let favoritosIds = Set(favoritos.compactMap { $0.id })
 
         // 3. Convertir cada establecimiento a su DTO de favorito y devolverlos
-        return favoritos.map { $0.toFavoriteDTO() }
+        return favoritos.map { $0.toFavoriteDTO(isFavorite: favoritosIds.contains($0.id!))}
     }
 
 }

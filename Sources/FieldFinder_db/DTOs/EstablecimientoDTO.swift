@@ -110,14 +110,16 @@ extension Establecimiento {
         let name: String
         let address: String
         let fotos: [String]
+        let isFavorite: Bool
     }
 
-    func toFavoriteDTO() -> FavoriteDTO {
+    func toFavoriteDTO(isFavorite: Bool) -> FavoriteDTO {
         FavoriteDTO(
             id: self.id!,
             name: self.name,
             address: self.address,
-            fotos: self.fotos.map { $0.url }
+            fotos: self.fotos.map { $0.url },
+            isFavorite: isFavorite
         )
     }
 }
