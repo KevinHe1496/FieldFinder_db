@@ -41,11 +41,10 @@ extension User {
     
     struct Update: Content {
         let name: String
-        let password: String
     }
     
     func toUpdate() -> User.Update {
-        User.Update(name: name, password: password)
+        User.Update(name: name)
     }
 }
 
@@ -62,6 +61,5 @@ extension User.Create: Validatable {
 extension User.Update: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("name", as: String.self, is: .count(2...50), required: true)
-        validations.add("password", as: String.self, is: .count(6...24) && .alphanumeric, required: true)
     }
 }

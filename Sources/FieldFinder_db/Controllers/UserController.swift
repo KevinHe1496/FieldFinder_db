@@ -9,8 +9,8 @@ struct UserController: RouteCollection {
         routes.group("users") { users in
             users.get("me", use: getMe)
             users.grouped(AdminMiddleware()).get(use: index)
-            users.put("update", "me", use: updateMe)
-            users.delete("delete", "me", use: deleteMe)
+            users.put("me", use: updateMe)
+            users.delete("me", use: deleteMe)
             users.group("favoritos") { favoritos in
                 favoritos.get(use: getMisFavoritos)
                 favoritos.post(":establecimientoID", use: marcarFavorito) // POST /users/favoritos/:id
@@ -83,7 +83,7 @@ extension UserController {
     
     /// Actualiza la información del usuario autenticado (nombre, rol, contraseña).
     @Sendable
-    func updateMe(req: Request) async throws -> User.Public {
+    func updateMe(req: Request) async throws -> User.Update {
         // 1. Validar token y obtener usuario
         let token = try req.auth.require(JWTToken.self)
         guard let userId = UUID(token.userID.value),
@@ -97,13 +97,12 @@ extension UserController {
         
         // 3. Actualizar los campos
         user.name = updateData.name
-        user.password = try Bcrypt.hash(updateData.password)
         
         // 4. Guardar
         try await user.save(on: req.db)
         
-        // 5. Devolver info pública
-        return user.toPublic()
+        // 5. Devolver info toUpdate
+        return user.toUpdate()
     }
     
     /// Elimina la cuenta del usuario autenticado, incluyendo todos sus establecimientos,
