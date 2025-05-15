@@ -58,6 +58,7 @@ extension Establecimiento {
         let latitude: Double
         let longitude: Double
         let phone: String
+        let isFavorite: Bool
     }
     
     struct Update: Content {
@@ -77,7 +78,7 @@ extension Establecimiento {
         let phone: String
     }
     
-    func toPublic() -> Establecimiento.Public {
+    func toPublic(isFavorite: Bool = false) -> Establecimiento.Public {
         Establecimiento
             .Public(
                 id: self.id!,
@@ -100,7 +101,8 @@ extension Establecimiento {
                 userRol: self.user.rol,
                 latitude: self.latitude,
                 longitude: self.longitude,
-                phone: self.phone
+                phone: self.phone,
+                isFavorite: isFavorite
             )
         
     }

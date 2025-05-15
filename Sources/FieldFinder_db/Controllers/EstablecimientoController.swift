@@ -235,6 +235,12 @@ extension EstablecimientoController {
     //Método para ver los establecimientos en la zona del jugador
     @Sendable
     func getNearbyEstablecimientos(req: Request) async throws -> [Establecimiento.Public] {
+        // 1. Usuario autenticado
+        let token = try req.auth.require(JWTToken.self)
+        guard let userID = UUID(token.userID.value),
+              let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.unauthorized)
+        }
         
         //Decodificamos la localización del jugador desde el JSON
         let location = try req.content.decode(LocationDTO.self)
@@ -248,6 +254,10 @@ extension EstablecimientoController {
             .with(\.$fotos) // Relacion con fotos
             .all()
         
+        // 4. Obtener favoritos del usuario
+        let favoritos = try await user.$favoritos.query(on: req.db).all()
+        let favoritosIDs = Set(favoritos.compactMap { $0.id })
+        
         //Filtramos solo los que estan a 10km o menos usando Haversine
         let nearbyEstablishments = allEstablishments.filter { establishment in
             let distance = haversineDistance(
@@ -258,7 +268,7 @@ extension EstablecimientoController {
             )
             return distance <= 10 // KM
         }
-        return nearbyEstablishments.map { $0.toPublic() }
+        return nearbyEstablishments.map { $0.toPublic(isFavorite: favoritosIDs.contains($0.id!)) }
     }
     
     /// Actualiza un establecimiento existente si pertenece al usuario autenticado.
