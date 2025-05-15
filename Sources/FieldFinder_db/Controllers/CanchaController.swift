@@ -23,7 +23,7 @@ extension CanchaController {
     
     /// Crea una nueva cancha asociada a un establecimiento del usuario autenticado, validando propiedad y guardando la cancha.
     @Sendable
-    func createCancha(req: Request) async throws -> APIResponse {
+    func createCancha(req: Request) async throws -> Cancha.List {
         
         // 1. Extraer el token JWT del request (cabecera Authorization)
         let token = try req.auth.require(JWTToken.self)
@@ -51,7 +51,8 @@ extension CanchaController {
         // 5. Guarda la cancha en la base de datos
         try await cancha.save(on: req.db)
         
-        return APIResponse(success: true, message: "Cancha registrada exitosamente.")
+        // 6. Retonar solo el ID  de la cancha
+        return cancha.toList()
     }
     
     /// Devuelve los datos de un establecimiento específico por ID, incluyendo las fotos.

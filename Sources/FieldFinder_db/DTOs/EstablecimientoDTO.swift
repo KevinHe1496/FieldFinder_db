@@ -61,6 +61,14 @@ extension Establecimiento {
         let isFavorite: Bool
     }
     
+    struct List: Content {
+        let id: UUID
+    }
+    
+    func toList() -> Establecimiento.List {
+        Establecimiento.List(id: id!)
+    }
+    
     struct Update: Content {
         let name: String
         let info: String

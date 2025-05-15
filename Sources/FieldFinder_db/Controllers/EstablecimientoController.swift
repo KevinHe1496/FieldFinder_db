@@ -29,7 +29,7 @@ extension EstablecimientoController {
     
     /// Registra un nuevo establecimiento para el usuario autenticado con rol dueño.
     @Sendable
-    func crearEstablecimiento(req: Request) async throws ->  APIResponse{
+    func crearEstablecimiento(req: Request) async throws ->  Establecimiento.List{
         
         // 1. Extraer el token JWT del request (cabecera Authorization)
         let token = try req.auth.require(JWTToken.self)
@@ -49,8 +49,8 @@ extension EstablecimientoController {
         // 4. Guardar el establecimiento recién creado en la base de datos
         try await establecimiento.save(on: req.db)
 
-        // 7. Retornamos establecimiento creatdo 201
-        return APIResponse(success: true, message: "Establecimiento registrado exitosamente.")
+        // 7. Retornamos establecimiento con su ID
+        return establecimiento.toList()
     }
     
     

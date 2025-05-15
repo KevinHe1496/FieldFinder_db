@@ -33,6 +33,14 @@ extension Cancha {
         
     }
     
+    struct List: Content {
+        let id: UUID
+    }
+    
+    func toList() -> Cancha.List {
+        Cancha.List(id: id!)
+    }
+    
     struct Update: Content {
         let tipo: TipoCancha
         let modalidad: String
