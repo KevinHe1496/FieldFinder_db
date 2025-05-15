@@ -15,11 +15,11 @@ struct EstablecimientoController: RouteCollection {
             
             // Ruta pública: obtener establecimiento por ID
             builder.get(":establecimientoID", use: getEstablecimientoByID)
-            builder.delete("delete", ":establecimientoID", use: deleteEstablecimientoByID)
+            builder.delete( ":establecimientoID", use: deleteEstablecimientoByID)
             builder.post("fotos", ":establecimientoID", use: uploadFotosEstablecimientoHandler)
             builder.get("fotos", ":establecimientoID", use: getFotosEstablecimientoHandler)
             builder.post("nearby", use: getNearbyEstablecimientos)
-            builder.grouped(RoleMiddleware(requiredRole: .dueno)).put("update", ":establecimientoID", use: updateEstlecimiento)
+            builder.grouped(RoleMiddleware(requiredRole: .dueno)).put(":establecimientoID", use: updateEstlecimiento)
             
         }
     }

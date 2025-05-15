@@ -12,8 +12,8 @@ struct CanchaController: RouteCollection {
             builder.post("fotos", ":canchaID", use: uploadFotosCanchaHandler)
             builder.get(":canchaID", use: getCanchaByID)
             builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getAll", "Canchas", use: getAllCanchas)
-            builder.delete("delete", ":canchaID", use: deleteCanchaByID)
-            builder.put("update",":canchaID", use: updateCancha)
+            builder.delete(":canchaID", use: deleteCanchaByID)
+            builder.put(":canchaID", use: updateCancha)
             builder.get("fotos", ":canchaID", use: getFotosCanchaHandler)
         }
     }
