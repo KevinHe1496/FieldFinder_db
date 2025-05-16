@@ -42,6 +42,16 @@ extension AuthController {
         // Guardamos el usuario en la base de datos
         try await user.create(on: req.db)
         
+        for i in 1...48 {
+            try? await req.queues(.email).dispatch(
+                EmailJob.self,
+                Email(
+                    to: user.email,
+                    message: "Your user \(i) has been created successfully"
+                )
+            )
+        }
+        
         // Generamos y devolvemos los tokens JWT
         return try await generateTokens(
             for: user.email,

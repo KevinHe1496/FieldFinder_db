@@ -18,7 +18,9 @@ let package = Package(
         // JWT
         .package(url: "https://github.com/vapor/jwt.git", from: "5.1.0"),
         // AWS
-        .package(url: "https://github.com/awslabs/aws-sdk-swift", from: "1.0.0")
+        .package(url: "https://github.com/awslabs/aws-sdk-swift", from: "1.0.0"),
+        // 🔵 Redis Queues Driver
+        .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0")
     ],
     targets: [
         .executableTarget(
@@ -32,7 +34,8 @@ let package = Package(
                 .product(name: "JWT", package: "jwt"),
                 .product(name: "AWSS3", package: "aws-sdk-swift"),
                 .product(name: "AWSClientRuntime", package: "aws-sdk-swift"),
-                .product(name: "AWSIAM", package: "aws-sdk-swift")
+                .product(name: "AWSIAM", package: "aws-sdk-swift"),
+                .product(name: "QueuesRedisDriver", package: "queues-redis-driver")
             ],
             swiftSettings: swiftSettings
         ),

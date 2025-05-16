@@ -1,6 +1,7 @@
 import NIOSSL
 import Fluent
 import FluentPostgresDriver
+import QueuesRedisDriver
 import Vapor
 import JWT
 
@@ -10,6 +11,13 @@ public func configure(_ app: Application) async throws {
      app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     
     guard let jwtKey = Environment.process.JWT_KEY else { fatalError("JWT_KEY not found")}
+    
+    // Configure Redis
+    let redisHost = Environment.get("REDIS_HOST") ?? "redis"
+    let redisPort = Environment.get("REDIS_PORT") ?? "6379"
+    try app.queues.use(.redis(url: "redis://\(redisHost):\(redisPort)"))
+    app.queues.add(EmailJob())
+    try app.queues.startInProcessJobs(on: .email)
 
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
