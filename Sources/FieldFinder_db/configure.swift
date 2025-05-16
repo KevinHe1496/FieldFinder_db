@@ -12,7 +12,10 @@ public func configure(_ app: Application) async throws {
     
     guard let jwtKey = Environment.process.JWT_KEY else { fatalError("JWT_KEY not found")}
     
-    // Configurar Redis según el entorno
+    // Configura Redis dinámicamente:
+    // - Usa localhost si estás ejecutando el backend desde Xcode (modo development)
+    // - Usa 'redis' si estás ejecutando dentro de Docker (modo production)
+
     let redisHost: String
     let redisPort: String
 
