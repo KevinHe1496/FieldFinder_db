@@ -34,8 +34,8 @@ final class User: Model, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
     
-    @OptionalChild(for: \Establecimiento.$user)
-    var establecimiento: Establecimiento?
+    @Children(for: \.$user)
+    var establecimientos: [Establecimiento]
     
     @Siblings(through: UserFavorite.self, from: \.$user, to: \.$establecimiento)
     var favoritos: [Establecimiento]

@@ -43,7 +43,7 @@ extension UserController {
         // - canchas de cada establecimiento, con sus fotos
         let getUser = try await User.query(on: req.db)
             .filter(\.$id == userId)  // Filtramos el usuario por su ID obtenido desde el token
-            .with(\.$establecimiento) { establecimiento in
+            .with(\.$establecimientos) { establecimiento in
                 establecimiento
                     .with(\.$fotos) // Fotos del establecimiento
                     .with(\.$user)  // Dueño del establecimiento
@@ -68,7 +68,7 @@ extension UserController {
     func index(req: Request) async throws -> [User.Public] {
         
         try await User.query(on: req.db)
-            .with(\.$establecimiento) { establecimiento in
+            .with(\.$establecimientos) { establecimiento in
                 establecimiento
                     .with(\.$fotos)
                     .with(\.$user)
@@ -121,7 +121,7 @@ extension UserController {
         // 2. Obtener todos los establecimientos del usuario, incluyendo:
         //    - canchas con sus fotos
         //    - fotos del establecimiento
-        let establecimientos = try await user.$establecimiento.query(on: req.db)
+        let establecimientos = try await user.$establecimientos.query(on: req.db)
             .with(\.$canchas) { cancha in
                 cancha.with(\.$fotos) // fotos de cada cancha
             }

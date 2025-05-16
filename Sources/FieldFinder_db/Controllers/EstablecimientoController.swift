@@ -14,7 +14,7 @@ struct EstablecimientoController: RouteCollection {
             builder.grouped(RoleMiddleware(requiredRole: .jugador)).post("getAll", "favoritos", use: getFavoritesEstablisments)
             
             // Ruta pública: obtener establecimiento por ID
-            builder.get("id" ,use: getEstablecimientoByID)
+            builder.get(":establecimientoID", use: getEstablecimientoByID)
             builder.delete( ":establecimientoID", use: deleteEstablecimientoByID)
             builder.post("fotos", ":establecimientoID", use: uploadFotosEstablecimientoHandler)
             builder.get("fotos", ":establecimientoID", use: getFotosEstablecimientoHandler)
@@ -95,37 +95,29 @@ extension EstablecimientoController {
 
     
     /// Devuelve los datos de un establecimiento específico por ID, incluyendo canchas y usuario.
-    /// Devuelve el establecimiento asociado al usuario autenticado (solo dueños).
     @Sendable
     func getEstablecimientoByID(req: Request) async throws -> Establecimiento.Public {
-        // 1. Validar el token JWT y obtener el usuario autenticado
-        let token = try req.auth.require(JWTToken.self)
-        guard let userId = UUID(token.userID.value),
-              let user = try await User.find(userId, on: req.db) else {
-            throw Abort(.unauthorized)
-        }
-
-        // 2. Cargar el establecimiento del usuario (relación uno a uno)
-        try await user.$establecimiento.load(on: req.db)
         
-        // 3. Verificar si el usuario tiene establecimiento
-        guard let establecimiento = user.establecimiento else {
-            throw Abort(.notFound, reason: "Este usuario no tiene un establecimiento.")
+        guard let id = req.parameters.get("establecimientoID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "ID inválido.")
         }
-
-        // 4. Cargar relaciones necesarias
+        
+        guard let establecimiento = try await Establecimiento.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "Establecimiento no encontrado.")
+        }
+        
+        // Cargar relaciones necesarias antes de convertir a .Public
         try await establecimiento.$canchas.load(on: req.db)
         try await establecimiento.$user.load(on: req.db)
         try await establecimiento.$fotos.load(on: req.db)
         
+        // Cargar las fotos de cada cancha relacionada
         for cancha in establecimiento.canchas {
             try await cancha.$fotos.load(on: req.db)
         }
-
-        // 5. Devolverlo en formato público
+        
         return establecimiento.toPublic()
     }
-
     
     /// Elimina un establecimiento por su ID, junto con sus canchas y fotos asociadas.
     /// - Returns: HTTP 204 si se elimina correctamente.
