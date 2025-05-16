@@ -12,9 +12,19 @@ public func configure(_ app: Application) async throws {
     
     guard let jwtKey = Environment.process.JWT_KEY else { fatalError("JWT_KEY not found")}
     
-    // Configure Redis
-    let redisHost = Environment.get("REDIS_HOST") ?? "redis"
-    let redisPort = Environment.get("REDIS_PORT") ?? "6379"
+    // Configurar Redis según el entorno
+    let redisHost: String
+    let redisPort: String
+
+    if app.environment == .development {
+        // Cuando corres localmente (desde Xcode)
+        redisHost = "localhost"
+        redisPort = "6379"
+    } else {
+        // En Docker u otros entornos
+        redisHost = Environment.get("REDIS_HOST") ?? "redis"
+        redisPort = Environment.get("REDIS_PORT") ?? "6379"
+    }
     try app.queues.use(.redis(url: "redis://\(redisHost):\(redisPort)"))
     app.queues.add(EmailJob())
     try app.queues.startInProcessJobs(on: .email)
