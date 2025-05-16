@@ -247,6 +247,7 @@ extension EstablecimientoController {
         
         //Obtenemos todos los establecimientos
         let allEstablishments = try await Establecimiento.query(on: req.db)
+            .sort(\.$updatedAt, .descending) // Ordena los establecimientos desde la más recientemente actualizada hasta la más antigua
             .with(\.$canchas) { cancha in
                 cancha.with(\.$fotos)
             } // Relación 1-N con canchas y sus fotos

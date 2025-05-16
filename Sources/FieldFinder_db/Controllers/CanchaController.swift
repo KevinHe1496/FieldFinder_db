@@ -86,6 +86,7 @@ extension CanchaController {
         // 1. Consultar todas las canchas desde la base de datos, incluyendo la relación con sus fotos
         let canchas = try await Cancha.query(on: req.db)
             .with(\.$fotos) // Relación 1-N: una cancha puede tener varias fotos
+            .sort(\.$updatedAt, .descending) // Ordena las canchas desde la más recientemente actualizada hasta la más antigua
             .all()
         
         // 2. Convertir cada cancha al formato público y retornar la lista
