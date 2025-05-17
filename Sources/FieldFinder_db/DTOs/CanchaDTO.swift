@@ -24,13 +24,26 @@ extension Cancha {
     
     struct Public: Content {
         let id: UUID
-        let tipo: TipoCancha
+        let tipo: String
         let modalidad: String
         let precio: Double
         let iluminada: Bool
         let cubierta: Bool
         let fotos: [String]
         
+    }
+    
+    func toPublic() -> Cancha.Public {
+        Cancha
+            .Public(
+                id: id!,
+                tipo: tipo.displayName,
+                modalidad: modalidad,
+                precio: precio,
+                iluminada: iluminada,
+                cubierta: cubierta,
+                fotos: fotos.map { $0.url }
+            )
     }
     
     struct List: Content {
@@ -47,18 +60,5 @@ extension Cancha {
         let precio: Double
         let iluminada: Bool
         let cubierta: Bool
-    }
-    
-    func toPublic() -> Cancha.Public {
-        Cancha
-            .Public(
-                id: id!,
-                tipo: tipo,
-                modalidad: modalidad,
-                precio: precio,
-                iluminada: iluminada,
-                cubierta: cubierta,
-                fotos: fotos.map { $0.url }
-            )
     }
 }

@@ -4,6 +4,15 @@ import Fluent
 enum TipoCancha: String, Codable {
     case cesped
     case sintetico
+    
+    var displayName: String {
+        switch self {
+        case .cesped:
+            return "Césped"
+        case .sintetico:
+            return "Sintético"
+        }
+    }
 }
 
 final class Cancha: Model, @unchecked Sendable {
