@@ -7,19 +7,25 @@ struct EstablecimientoController: RouteCollection {
     /// Define las rutas bajo `/establecimiento` y las asocia con middlewares y funciones.
     func boot(routes: any RoutesBuilder) throws {
         routes.group("establecimiento") { builder in
-            // Ruta protegida: solo dueños pueden registrar establecimientos
-            builder.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
             
-            // Ruta protegida: solo jugadores pueden ver todos los establecimientos
-            builder.grouped(RoleMiddleware(requiredRole: .jugador)).post("getAll", "favoritos", use: getFavoritesEstablisments)
+            let protected = builder.grouped([
+                JWTToken.authenticator(),
+                JWTToken.guardMiddleware()
+            ])
+            
+            // Ruta protegida: solo dueños pueden registrar establecimientos
+            protected.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
+            
+            // Ver los establecimientos favoritos
+            protected.post("getAll", "favoritos", use: getFavoritesEstablisments)
             
             // Ruta pública: obtener establecimiento por ID
             builder.get(":establecimientoID", use: getEstablecimientoByID)
-            builder.delete( ":establecimientoID", use: deleteEstablecimientoByID)
-            builder.post("fotos", ":establecimientoID", use: uploadFotosEstablecimientoHandler)
+            protected.delete( ":establecimientoID", use: deleteEstablecimientoByID)
+            protected.post("fotos", ":establecimientoID", use: uploadFotosEstablecimientoHandler)
             builder.get("fotos", ":establecimientoID", use: getFotosEstablecimientoHandler)
             builder.post("nearby", use: getNearbyEstablecimientos)
-            builder.grouped(RoleMiddleware(requiredRole: .dueno)).put(":establecimientoID", use: updateEstlecimiento)
+            protected.grouped(RoleMiddleware(requiredRole: .dueno)).put(":establecimientoID", use: updateEstlecimiento)
             
         }
     }
@@ -236,31 +242,31 @@ extension EstablecimientoController {
     //Método para ver los establecimientos en la zona del jugador
     @Sendable
     func getNearbyEstablecimientos(req: Request) async throws -> [Establecimiento.Public] {
-        // 1. Usuario autenticado
-        let token = try req.auth.require(JWTToken.self)
-        guard let userID = UUID(token.userID.value),
-              let user = try await User.find(userID, on: req.db) else {
-            throw Abort(.unauthorized)
-        }
         
-        //Decodificamos la localización del jugador desde el JSON
+        // 1. Decodificar ubicación enviada por el dispositivo
         let location = try req.content.decode(LocationDTO.self)
         
-        //Obtenemos todos los establecimientos
+        // 2. Obtener todos los establecimientos con sus relaciones
         let allEstablishments = try await Establecimiento.query(on: req.db)
-            .sort(\.$updatedAt, .descending) // Ordena los establecimientos desde la más recientemente actualizada hasta la más antigua
+            .sort(\.$updatedAt, .descending)
             .with(\.$canchas) { cancha in
                 cancha.with(\.$fotos)
-            } // Relación 1-N con canchas y sus fotos
-            .with(\.$user)    // Relación con usuario creador
-            .with(\.$fotos) // Relacion con fotos
+            }
+            .with(\.$user)
+            .with(\.$fotos)
             .all()
         
-        // 4. Obtener favoritos del usuario
-        let favoritos = try await user.$favoritos.query(on: req.db).all()
-        let favoritosIDs = Set(favoritos.compactMap { $0.id })
+        // 3. Intentar obtener favoritos solo si el usuario está autenticado (token opcional)
+        var favoritosIDs = Set<UUID>()
+        if let token = try? req.auth.require(JWTToken.self),
+           let userID = UUID(token.userID.value),
+           let user = try await User.find(userID, on: req.db) {
+            
+            let favoritos = try await user.$favoritos.query(on: req.db).all()
+            favoritosIDs = Set(favoritos.compactMap { $0.id })
+        }
         
-        //Filtramos solo los que estan a 10km o menos usando Haversine
+        // 4. Filtrar los establecimientos dentro de los 10 km
         let nearbyEstablishments = allEstablishments.filter { establishment in
             let distance = haversineDistance(
                 lat1: location.latitude,
@@ -268,10 +274,15 @@ extension EstablecimientoController {
                 lat2: establishment.latitude,
                 lon2: establishment.longitude
             )
-            return distance <= 10 // KM
+            return distance <= 10
         }
-        return nearbyEstablishments.map { $0.toPublic(isFavorite: favoritosIDs.contains($0.id!)) }
+        
+        // 5. Mapear a modelo público, marcando favoritos si aplica
+        return nearbyEstablishments.map {
+            $0.toPublic(isFavorite: favoritosIDs.contains($0.id!))
+        }
     }
+
     
     /// Actualiza un establecimiento existente si pertenece al usuario autenticado.
     @Sendable

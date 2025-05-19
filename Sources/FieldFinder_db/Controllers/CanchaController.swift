@@ -7,13 +7,20 @@ struct CanchaController: RouteCollection {
     /// Registra las rutas bajo `/cancha` y asocia el endpoint de registro de cancha.
     func boot(routes: any RoutesBuilder) throws {
         routes.group("cancha") { builder in
-            // Ruta POST /cancha/register para crear una nueva cancha
-            builder.post("register", use: createCancha)
-            builder.post("fotos", ":canchaID", use: uploadFotosCanchaHandler)
+            
+            // Se necesita el token para acceder a estas rutas protegidas
+            let protected = builder.grouped([
+                JWTToken.authenticator(),
+                JWTToken.guardMiddleware()
+            ])
+            
+            protected.grouped(RoleMiddleware(requiredRole: .dueno))
+                .post("register", use: createCancha)
+            protected.post("fotos", ":canchaID", use: uploadFotosCanchaHandler)
             builder.get(":canchaID", use: getCanchaByID)
-            builder.grouped(RoleMiddleware(requiredRole: .jugador)).get("getAll", "Canchas", use: getAllCanchas)
-            builder.delete(":canchaID", use: deleteCanchaByID)
-            builder.put(":canchaID", use: updateCancha)
+            builder.get("all", use: getAllCanchas)
+            protected.delete(":canchaID", use: deleteCanchaByID)
+            protected.put(":canchaID", use: updateCancha)
             builder.get("fotos", ":canchaID", use: getFotosCanchaHandler)
         }
     }

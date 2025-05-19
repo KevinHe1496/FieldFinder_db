@@ -7,11 +7,17 @@ struct UserController: RouteCollection {
     /// Define las rutas bajo `/users` y aplica middlewares según el caso.
     func boot(routes: any RoutesBuilder) throws {
         routes.group("users") { users in
-            users.get("me", use: getMe)
-            users.grouped(AdminMiddleware()).get(use: index)
-            users.put("me", use: updateMe)
-            users.delete("me", use: deleteMe)
-            users.group("favoritos") { favoritos in
+            
+            let protected = users.grouped([
+                JWTToken.authenticator(),
+                JWTToken.guardMiddleware()
+            ])
+            
+            protected.get("me", use: getMe)
+            protected.grouped(AdminMiddleware()).get(use: index)
+            protected.put("me", use: updateMe)
+            protected.delete("me", use: deleteMe)
+            protected.group("favoritos") { favoritos in
                 favoritos.get(use: getMisFavoritos)
                 favoritos.post(":establecimientoID", use: marcarFavorito) // POST /users/favoritos/:id
                 favoritos.delete(":establecimientoID", use: eliminarFavorito) // DELETE /users/favoritos/:id

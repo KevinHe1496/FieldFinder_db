@@ -6,6 +6,7 @@ struct AuthController: RouteCollection {
     /// Define las rutas relacionadas con la autenticación y las agrupa bajo `/auth`.
     func boot(routes: any RoutesBuilder) throws {
         routes.group("auth") { builder in
+            
             // Ruta para registrar un nuevo usuario
             builder.post("register", use: register)
             

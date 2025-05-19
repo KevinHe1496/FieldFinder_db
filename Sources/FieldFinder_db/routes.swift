@@ -2,20 +2,15 @@ import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
-app.get { req async in
+    app.get { req async in
         "It works!"
     }
-
+    
     try app.group("api") { builder in
-        
         try builder.register(collection: AuthController())
-        
-        try builder.group(JWTToken.authenticator(), JWTToken.guardMiddleware()) { builder in
-            try builder.register(collection: UserController())
-            try builder.register(collection: EstablecimientoController())
-            try builder.register(collection: CanchaController())
-        }
-        
+        try builder.register(collection: UserController())
+        try builder.register(collection: EstablecimientoController())
+        try builder.register(collection: CanchaController())
     }
     
 }
