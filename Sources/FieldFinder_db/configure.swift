@@ -11,6 +11,10 @@ public func configure(_ app: Application) async throws {
      app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     
     guard let jwtKey = Environment.process.JWT_KEY else { fatalError("JWT_KEY not found")}
+    guard let apiKey = Environment.get("SENDGRID_API_KEY") else {
+        fatalError("APIKEY not found")
+    }
+
     
     // Configura Redis dinámicamente:
     // - Usa localhost si estás ejecutando el backend desde Xcode (modo development)

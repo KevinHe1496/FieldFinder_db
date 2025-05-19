@@ -39,6 +39,10 @@ extension AuthController {
         // Creamos el modelo de usuario listo para guardar
         let user = create.toModel(withHashedPassword: hashedPassword)
         
+        // Mandamos el email al usuario que su registro fue exitoso.
+//        try await EmailService.sendRegistrationEmail(to: user.email, name: user.name, on: req)
+
+        
         // Guardamos el usuario en la base de datos
         try await user.create(on: req.db)
         
