@@ -266,7 +266,7 @@ extension EstablecimientoController {
             favoritosIDs = Set(favoritos.compactMap { $0.id })
         }
         
-        // 4. Filtrar los establecimientos dentro de los 10 km
+        // 4. Filtrar los establecimientos dentro de los 30 km
         let nearbyEstablishments = allEstablishments.filter { establishment in
             let distance = haversineDistance(
                 lat1: location.latitude,
@@ -274,7 +274,7 @@ extension EstablecimientoController {
                 lat2: establishment.latitude,
                 lon2: establishment.longitude
             )
-            return distance <= 10
+            return distance <= 30
         }
         
         // 5. Mapear a modelo público, marcando favoritos si aplica
@@ -351,7 +351,7 @@ extension EstablecimientoController {
 }
 
 
-//MARK: Método Haversine para filtrar la distancia del consumidor con 10km de radio para recibir restaurantes
+//MARK: Método Haversine para filtrar la distancia del consumidor con 30km de radio para recibir restaurantes
 func haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
     let earthRadius = 6371.0
     let dLat = (lat2 - lat1) * .pi / 180
