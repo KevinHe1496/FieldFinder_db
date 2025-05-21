@@ -21,6 +21,11 @@ public func configure(_ app: Application) async throws {
         try app.queues.startInProcessJobs(on: .email)
     }
     
+    // TLS Configuration según entorno
+        let tlsConfig: TLSConfiguration = app.environment == .production
+            ? .clientDefault
+            : .forClient(certificateVerification: .none)
+    
     // Configuración de base de datos PostgreSQL
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
