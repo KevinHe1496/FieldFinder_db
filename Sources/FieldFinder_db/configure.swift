@@ -7,31 +7,21 @@ import JWT
 
 // configures your application
 public func configure(_ app: Application) async throws {
-    // uncomment to serve files from /Public folder
-     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    // Serve files from /Public folder
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     
-    guard let jwtKey = Environment.process.JWT_KEY else { fatalError("JWT_KEY not found")}
-    
-    // Configura Redis dinámicamente:
-    // - Usa localhost si estás ejecutando el backend desde Xcode (modo development)
-    // - Usa 'redis' si estás ejecutando dentro de Docker (modo production)
-
-    let redisHost: String
-    let redisPort: String
-
-    if app.environment == .development {
-        // Cuando corres localmente (desde Xcode)
-        redisHost = "localhost"
-        redisPort = "6379"
-    } else {
-        // En Docker u otros entornos
-        redisHost = Environment.get("REDIS_HOST") ?? "redis"
-        redisPort = Environment.get("REDIS_PORT") ?? "6379"
+    guard let jwtKey = Environment.process.JWT_KEY else {
+        fatalError("JWT_KEY not found")
     }
-    try app.queues.use(.redis(url: "redis://\(redisHost):\(redisPort)"))
-    app.queues.add(EmailJob())
-    try app.queues.startInProcessJobs(on: .email)
-
+    
+    // Solo configuramos Redis en desarrollo (local)
+    if app.environment == .development {
+        try app.queues.use(.redis(url: "redis://localhost:6379"))
+        app.queues.add(EmailJob())
+        try app.queues.startInProcessJobs(on: .email)
+    }
+    
+    // Configuración de base de datos PostgreSQL
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
         port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? SQLPostgresConfiguration.ianaPortNumber,
@@ -41,14 +31,15 @@ public func configure(_ app: Application) async throws {
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
 
-    //Set password
+    // Configurar sistema de contraseñas y JWT
     app.passwords.use(.bcrypt)
     
-    //Configure JWT
     let hmacKey = HMACKey(stringLiteral: jwtKey)
     await app.jwt.keys.add(hmac: hmacKey, digestAlgorithm: .sha512)
     
     app.routes.defaultMaxBodySize = "20mb"
+    
+    // Migraciones
     app.migrations.add(UserMigration())
     app.migrations.add(EstablecimientoMigration())
     app.migrations.add(EstablecimientoFotoMigration())
@@ -60,6 +51,6 @@ public func configure(_ app: Application) async throws {
         try await app.autoMigrate()
     }
 
-    // register routes
+    // Registrar rutas
     try routes(app)
 }
