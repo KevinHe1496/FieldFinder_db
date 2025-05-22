@@ -27,7 +27,7 @@ public func configure(_ app: Application) async throws {
         config.certificateVerification = .none
         return config
     }()
-
+    
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
         port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? 5432,
@@ -36,8 +36,8 @@ public func configure(_ app: Application) async throws {
         database: Environment.get("DATABASE_NAME") ?? "vapor_database",
         tls: .require(try .init(configuration: tlsConfiguration))
     )), as: .psql)
-
-
+    
+    
     // Configurar sistema de contraseñas y JWT
     app.passwords.use(.bcrypt)
     
@@ -53,11 +53,11 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CanchaMigration())
     app.migrations.add(CanchaFotoMigration())
     app.migrations.add(UserFavoriteMigration())
-
-    if [.development, .testing].contains(app.environment) {
-        try await app.autoMigrate()
-    }
-
+    
+    
+    try await app.autoMigrate()
+    
+    
     // Registrar rutas
     try routes(app)
 }
