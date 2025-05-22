@@ -22,23 +22,21 @@ public func configure(_ app: Application) async throws {
     }
     
     // TLS Configuration según entorno (sin warnings)
-    let tlsConfiguration: TLSConfiguration = app.environment == .production
-        ? .clientDefault
-        : {
-            var config = TLSConfiguration.makeClientConfiguration()
-            config.certificateVerification = .none
-            return config
-        }()
+    let tlsConfiguration: TLSConfiguration = {
+        var config = TLSConfiguration.makeClientConfiguration()
+        config.certificateVerification = .none
+        return config
+    }()
 
-    // Configuración de base de datos PostgreSQL
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? SQLPostgresConfiguration.ianaPortNumber,
+        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? 5432,
         username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
         password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
         database: Environment.get("DATABASE_NAME") ?? "vapor_database",
         tls: .require(try .init(configuration: tlsConfiguration))
     )), as: .psql)
+
 
     // Configurar sistema de contraseñas y JWT
     app.passwords.use(.bcrypt)
