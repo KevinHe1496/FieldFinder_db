@@ -6,9 +6,7 @@ extension Establecimiento {
         let name: String
         let info: String
         let address: String
-        let country: String
-        let city: String
-        let zipCode: String
+        let address2: String?
         let parqueadero: Bool
         let vestidores: Bool
         let bar: Bool
@@ -23,9 +21,7 @@ extension Establecimiento {
                 name: name,
                 info: info,
                 address: address,
-                country: country,
-                city: city,
-                zipCode: zipCode,
+                address2: address2,
                 parqueadero: parqueadero,
                 vestidores: vestidores,
                 bar: bar,
@@ -44,9 +40,7 @@ extension Establecimiento {
         let info: String
         let fotos: [String]
         let address: String
-        let country: String
-        let city: String
-        let zipCode: String
+        let address2: String?
         let parquedero: Bool
         let vestidores: Bool
         let bar: Bool
@@ -73,9 +67,7 @@ extension Establecimiento {
         let name: String
         let info: String
         let address: String
-        let country: String
-        let city: String
-        let zipCode: String
+        let address2: String?
         let parqueadero: Bool
         let vestidores: Bool
         let bar: Bool
@@ -94,9 +86,7 @@ extension Establecimiento {
                 info: self.info,
                 fotos: self.fotos.map { $0.url },
                 address: self.address,
-                country: self.country,
-                city: self.city,
-                zipCode: self.zipCode,
+                address2: self.address2,
                 parquedero: self.parqueadero,
                 vestidores: self.vestidores,
                 bar: self.bar,

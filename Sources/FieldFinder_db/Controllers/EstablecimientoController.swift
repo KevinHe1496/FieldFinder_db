@@ -317,9 +317,7 @@ extension EstablecimientoController {
         establecimiento.name = updateData.name
         establecimiento.info = updateData.info
         establecimiento.address = updateData.address
-        establecimiento.country = updateData.country
-        establecimiento.city = updateData.city
-        establecimiento.zipCode = updateData.zipCode
+        establecimiento.address2 = updateData.address2
         establecimiento.parqueadero = updateData.parqueadero
         establecimiento.vestidores = updateData.vestidores
         establecimiento.bar = updateData.bar

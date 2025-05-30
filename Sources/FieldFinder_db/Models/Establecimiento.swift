@@ -17,14 +17,8 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Field(key: "address")
     var address: String
     
-    @Field(key: "country")
-    var country: String
-
-    @Field(key: "city")
-    var city: String
-
-    @Field(key: "zip_code")
-    var zipCode: String
+    @Field(key: "address2")
+    var address2: String?
     
     @Field(key: "parqueadero")
     var parqueadero: Bool
@@ -72,9 +66,7 @@ final class Establecimiento: Model, @unchecked Sendable {
         name: String,
         info: String,
         address: String,
-        country: String,
-        city: String,
-        zipCode: String,
+        address2: String?,
         parqueadero: Bool,
         vestidores: Bool,
         bar: Bool,
@@ -89,9 +81,7 @@ final class Establecimiento: Model, @unchecked Sendable {
         self.name = name
         self.info = info
         self.address = address
-        self.country = country
-        self.city = city
-        self.zipCode = zipCode
+        self.address2 = address2
         self.parqueadero = parqueadero
         self.vestidores = vestidores
         self.bar = bar
