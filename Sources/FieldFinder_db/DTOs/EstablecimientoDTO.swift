@@ -37,6 +37,7 @@ extension Establecimiento {
     struct Public: Content {
         let id: UUID
         let name: String
+        let ownerID: UUID
         let info: String
         let fotos: [String]
         let address: String
@@ -53,6 +54,34 @@ extension Establecimiento {
         let longitude: Double
         let phone: String
         let isFavorite: Bool
+    }
+    
+    func toPublic(isFavorite: Bool = false) -> Establecimiento.Public {
+        Establecimiento
+            .Public(
+                id: self.id!,
+                name: self.name,
+                ownerID: self.$user.id,
+                info: self.info,
+                fotos: self.fotos.map { $0.url },
+                address: self.address,
+                address2: self.address2,
+                parquedero: self.parqueadero,
+                vestidores: self.vestidores,
+                bar: self.bar,
+                banos: self.banos,
+                duchas: self.duchas,
+                canchas: self.canchas.map({ cancha in
+                    cancha.toPublic()
+                }),
+                userName: self.user.name,
+                userRol: self.user.rol,
+                latitude: self.latitude,
+                longitude: self.longitude,
+                phone: self.phone,
+                isFavorite: isFavorite
+            )
+        
     }
     
     struct List: Content {
@@ -76,33 +105,6 @@ extension Establecimiento {
         let latitude: Double
         let longitude: Double
         let phone: String
-    }
-    
-    func toPublic(isFavorite: Bool = false) -> Establecimiento.Public {
-        Establecimiento
-            .Public(
-                id: self.id!,
-                name: self.name,
-                info: self.info,
-                fotos: self.fotos.map { $0.url },
-                address: self.address,
-                address2: self.address2,
-                parquedero: self.parqueadero,
-                vestidores: self.vestidores,
-                bar: self.bar,
-                banos: self.banos,
-                duchas: self.duchas,
-                canchas: self.canchas.map({ cancha in
-                    cancha.toPublic()
-                }),
-                userName: self.user.name,
-                userRol: self.user.rol,
-                latitude: self.latitude,
-                longitude: self.longitude,
-                phone: self.phone,
-                isFavorite: isFavorite
-            )
-        
     }
     
     struct FavoriteDTO: Content {
