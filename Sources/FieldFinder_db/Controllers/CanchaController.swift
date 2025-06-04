@@ -47,13 +47,14 @@ extension CanchaController {
         
         // 3. Verifica que el establecimiento exista y pertenezca al usuario autenticado
         guard let establecimiento = try await Establecimiento.query(on: req.db)
-            .filter(\.$user.$id == userId)
+            .filter(\.$id == create.establecimientoID) // Busca el que quiere el cliente
+            .filter(\.$user.$id == userId) // Asegura que le pertenece al usuario
             .first() else {
             throw Abort(.unauthorized, reason: "No puedes registrar canchas en un establecimiento que no te pertenece.")
         }
         
         // 4. Crea una nueva instancia del modelo Cancha a partir del DTO
-        let cancha = create.toModel(establecimientoID: try establecimiento.requireID())
+        let cancha = create.toModel()
         
         // 5. Guarda la cancha en la base de datos
         try await cancha.save(on: req.db)

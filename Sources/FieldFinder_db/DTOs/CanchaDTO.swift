@@ -9,8 +9,9 @@ extension Cancha {
         let precio: Double
         let iluminada: Bool
         let cubierta: Bool
+        let establecimientoID: UUID
         
-        func toModel(establecimientoID: UUID) -> Cancha {
+        func toModel() -> Cancha {
             Cancha(
                 tipo: tipo,
                 modalidad: modalidad,
