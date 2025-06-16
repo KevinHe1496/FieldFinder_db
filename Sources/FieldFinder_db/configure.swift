@@ -33,7 +33,7 @@ public func configure(_ app: Application) async throws {
         username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
         password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
         database: Environment.get("DATABASE_NAME") ?? "vapor_database",
-        tls: .require(nioTLS)
+        tls: .disable
     )
     
     app.databases.use(.postgres(configuration: dbConfig), as: .psql)
