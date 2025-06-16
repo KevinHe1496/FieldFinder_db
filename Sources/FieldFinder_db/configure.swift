@@ -21,22 +21,12 @@ public func configure(_ app: Application) async throws {
         try app.queues.startInProcessJobs(on: .email)
     }
 
-    // Configuración moderna de TLS
-    var tlsConfig = TLSConfiguration.makeClientConfiguration()
-    tlsConfig.certificateVerification = .none
-    let nioTLS = try NIOSSLContext(configuration: tlsConfig)
-
-    // Configuración moderna de la base de datos
-    let dbConfig = SQLPostgresConfiguration(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? 5432,
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database",
-        tls: .disable
-    )
-    
-    app.databases.use(.postgres(configuration: dbConfig), as: .psql)
+    if let databaseURL = Environment.get("DATABASE_URL"),
+       let sqlConfig = try? SQLPostgresConfiguration(url: databaseURL) {
+        app.databases.use(.postgres(configuration: sqlConfig), as: .psql)
+    } else {
+        fatalError("DATABASE_URL not set or invalid")
+    }
 
     // Seguridad
     app.passwords.use(.bcrypt)
