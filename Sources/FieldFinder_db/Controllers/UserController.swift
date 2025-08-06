@@ -166,26 +166,28 @@ extension UserController {
     /// - Returns: HTTP 201 (Created) si el establecimiento fue marcado como favorito.
     @Sendable
     func marcarFavorito(req: Request) async throws -> HTTPStatus {
-        // 1. Validar el token y obtener el usuario autenticado
         let token = try req.auth.require(JWTToken.self)
         guard let userID = UUID(token.userID.value),
               let user = try await User.find(userID, on: req.db) else {
             throw Abort(.unauthorized)
         }
 
-        // 2. Obtener el ID del establecimiento desde la URL y validarlo
         guard let establecimientoID = req.parameters.get("establecimientoID", as: UUID.self),
               let establecimiento = try await Establecimiento.find(establecimientoID, on: req.db) else {
             throw Abort(.notFound, reason: "Establecimiento no encontrado")
         }
 
-        // 3. Asociar el establecimiento al usuario como favorito
-        try await user.$favoritos.attach(establecimiento, on: req.db)
+        // Verificamos si ya es favorito
+        let esFavorito = try await user.$favoritos.isAttached(to: establecimiento, on: req.db)
 
-        // 4. Retornar HTTP 201 (Created)
-        return .created
+        if esFavorito {
+            try await user.$favoritos.detach(establecimiento, on: req.db)
+            return .noContent // 204 = eliminado
+        } else {
+            try await user.$favoritos.attach(establecimiento, on: req.db)
+            return .created // 201 = agregado
+        }
     }
-
 
     /// Elimina un establecimiento de los favoritos del usuario autenticado.
     /// - Parameters: Ningún parámetro en el body. El `establecimientoID` viene en la URL.
