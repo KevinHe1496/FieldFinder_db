@@ -20,6 +20,7 @@ struct EstablecimientoController: RouteCollection {
             protected.post("getAll", "favoritos", use: getFavoritesEstablisments)
             
             // Ruta pública: obtener establecimiento por ID
+            builder.get("all", use: getAllEstablecimientos)
             builder.get(":establecimientoID", use: getEstablecimientoByID)
             protected.delete( ":establecimientoID", use: deleteEstablecimientoByID)
             protected.post("fotos", ":establecimientoID", use: uploadFotosEstablecimientoHandler)
@@ -32,6 +33,19 @@ struct EstablecimientoController: RouteCollection {
 }
 
 extension EstablecimientoController {
+    @Sendable
+    func getAllEstablecimientos(req: Request) async throws -> [Establecimiento.Public] {
+        let establecimientos = try await Establecimiento.query(on: req.db)
+            .sort(\.$updatedAt, .descending)
+            .with(\.$canchas) { cancha in
+                cancha.with(\.$fotos)
+            }
+            .with(\.$user)
+            .with(\.$fotos)
+            .all()
+
+        return establecimientos.map { $0.toPublic() }
+    }
     
     /// Registra un nuevo establecimiento para el usuario autenticado con rol dueño.
     @Sendable

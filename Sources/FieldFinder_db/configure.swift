@@ -15,11 +15,11 @@ public func configure(_ app: Application) async throws {
     }
     
 //     Configuración de Redis solo en desarrollo
-    if app.environment == .development {
-        try app.queues.use(.redis(url: "redis://localhost:6379"))
-        app.queues.add(EmailJob())
-        try app.queues.startInProcessJobs(on: .email)
-    }
+    // if app.environment == .development {
+    //     try app.queues.use(.redis(url: "redis://localhost:6379"))
+    //     app.queues.add(EmailJob())
+    //     try app.queues.startInProcessJobs(on: .email)
+    // }
     
     if let databaseURL = Environment.get("DATABASE_URL"),
        let sqlConfig = try? SQLPostgresConfiguration(url: databaseURL) {
@@ -49,6 +49,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CanchaMigration())
     app.migrations.add(CanchaFotoMigration())
     app.migrations.add(UserFavoriteMigration())
+    app.asyncCommands.use(SeedCanchasCommand(), as: "seed-canchas")
+    
     
     if let port = Environment.get("PORT").flatMap(Int.init) {
         app.http.server.configuration.port = port
