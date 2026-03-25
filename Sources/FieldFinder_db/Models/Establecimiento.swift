@@ -50,8 +50,8 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
     
-    @Parent(key: "user_id")
-    var user: User
+    @OptionalParent(key: "user_id")
+    var user: User?
     
     @Children(for: \.$establecimiento)
     var canchas: [Cancha]

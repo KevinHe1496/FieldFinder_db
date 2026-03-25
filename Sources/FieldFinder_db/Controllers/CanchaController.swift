@@ -46,10 +46,12 @@ extension CanchaController {
         print("Input recibido:", create)
         
         // 3. Verifica que el establecimiento exista y pertenezca al usuario autenticado
-        guard let establecimiento = try await Establecimiento.query(on: req.db)
+        let establecimientoExists = try await Establecimiento.query(on: req.db)
             .filter(\.$id == create.establecimientoID) // Busca el que quiere el cliente
             .filter(\.$user.$id == userId) // Asegura que le pertenece al usuario
-            .first() else {
+            .first() != nil
+
+        guard establecimientoExists else {
             throw Abort(.unauthorized, reason: "No puedes registrar canchas en un establecimiento que no te pertenece.")
         }
         
@@ -129,7 +131,8 @@ extension CanchaController {
         try await cancha.establecimiento.$user.load(on: req.db)
 
         // 6. Validar que el usuario autenticado sea el dueño del establecimiento
-        guard cancha.establecimiento.user.id == userId else {
+        guard let ownerId = cancha.establecimiento.$user.id,
+              ownerId == userId else {
             throw Abort(.unauthorized, reason: "No tienes permiso para eliminar esta cancha.")
         }
 
@@ -173,7 +176,8 @@ extension CanchaController {
         try await cancha.establecimiento.$user.load(on: req.db)
 
         // 5. Verificar que el usuario autenticado sea el dueño
-        guard cancha.establecimiento.user.id == userId else {
+        guard let ownerId = cancha.establecimiento.$user.id,
+              ownerId == userId else {
             throw Abort(.unauthorized, reason: "No tienes permiso para modificar esta cancha.")
         }
 

@@ -44,7 +44,8 @@ struct SeedCanchasCommand: AsyncCommand {
         }
         
         // 3. Configurar la búsqueda de Google
-        let searchQuery = "canchas de futbol sinteticas y estadios en Santa Barbara"
+        // Pon el nombre de tu ciudad y país real.
+        let searchQuery = "canchas de futbol sinteticas y estadios en Quito, Ecuador"
         guard let encodedQuery = searchQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
         
         let urlString = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=\(encodedQuery)&key=\(apiKey)"

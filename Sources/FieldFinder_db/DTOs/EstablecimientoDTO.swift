@@ -35,55 +35,59 @@ extension Establecimiento {
         }
     }
     struct Public: Content {
-        let id: UUID
-        let name: String
-        let ownerID: UUID
-        let info: String
-        let fotos: [String]
-        let address: String
-        let address2: String?
-        let parquedero: Bool
-        let vestidores: Bool
-        let bar: Bool
-        let banos: Bool
-        let duchas: Bool
-        let canchas: [Cancha.Public]
-        let userName: String
-        let userRol: RolUsuario
-        let latitude: Double
-        let longitude: Double
-        let phone: String
-        let isFavorite: Bool
-    }
-    
-    func toPublic(isFavorite: Bool = false) -> Establecimiento.Public {
-        Establecimiento
-            .Public(
-                id: self.id!,
-                name: self.name,
-                ownerID: self.$user.id,
-                info: self.info,
-                fotos: self.fotos.map { $0.url },
-                address: self.address,
-                address2: self.address2,
-                parquedero: self.parqueadero,
-                vestidores: self.vestidores,
-                bar: self.bar,
-                banos: self.banos,
-                duchas: self.duchas,
-                canchas: self.canchas.map({ cancha in
-                    cancha.toPublic()
-                }),
-                userName: self.user.name,
-                userRol: self.user.rol,
-                latitude: self.latitude,
-                longitude: self.longitude,
-                phone: self.phone,
-                isFavorite: isFavorite
-            )
+            let id: UUID
+            let name: String
+            let ownerID: UUID? // <--- IMPORTANTE: Cámbialo a opcional (UUID?)
+            let info: String
+            let fotos: [String]
+            let address: String
+            let address2: String?
+            let parquedero: Bool
+            let vestidores: Bool
+            let bar: Bool
+            let banos: Bool
+            let duchas: Bool
+            let canchas: [Cancha.Public]
+            let userName: String? // <--- Cámbialo a opcional (String?)
+            let userRol: RolUsuario? // <--- Cámbialo a opcional (RolUsuario?)
+            let latitude: Double
+            let longitude: Double
+            let phone: String
+            let isFavorite: Bool
+            
+            // NUEVA PROPIEDAD PARA EL FRONTEND
+            let isClaimed: Bool
+        }
         
-    }
-    
+        func toPublic(isFavorite: Bool = false) -> Establecimiento.Public {
+            Establecimiento
+                .Public(
+                    id: self.id!,
+                    name: self.name,
+                    ownerID: self.$user.id, // Ya es opcional gracias a @OptionalParent
+                    info: self.info,
+                    fotos: self.fotos.map { $0.url },
+                    address: self.address,
+                    address2: self.address2,
+                    parquedero: self.parqueadero,
+                    vestidores: self.vestidores,
+                    bar: self.bar,
+                    banos: self.banos,
+                    duchas: self.duchas,
+                    canchas: self.canchas.map({ cancha in
+                        cancha.toPublic()
+                    }),
+                    userName: self.user?.name, // Usa ? porque user puede ser nil
+                    userRol: self.user?.rol,   // Usa ? porque user puede ser nil
+                    latitude: self.latitude,
+                    longitude: self.longitude,
+                    phone: self.phone,
+                    isFavorite: isFavorite,
+                    
+                    // LÓGICA DE NEGOCIO: Está reclamada si el ownerID NO es nil
+                    isClaimed: self.$user.id != nil
+                )
+        }
     struct List: Content {
         let id: UUID
     }
