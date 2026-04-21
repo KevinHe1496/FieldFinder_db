@@ -75,7 +75,7 @@ final class Establecimiento: Model, @unchecked Sendable {
         latitude: Double,
         longitude: Double,
         phone: String,
-        userId: User.IDValue
+        userId: User.IDValue? = nil
     ) {
         self.id = id
         self.name = name

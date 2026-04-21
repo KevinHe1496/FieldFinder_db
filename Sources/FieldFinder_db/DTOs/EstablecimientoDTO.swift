@@ -16,7 +16,7 @@ extension Establecimiento {
         let longitude: Double
         let phone: String
  
-        func toModel(userId: UUID) -> Establecimiento {
+        func toModel() -> Establecimiento {
             Establecimiento(
                 name: name,
                 info: info,
@@ -29,8 +29,7 @@ extension Establecimiento {
                 duchas: duchas,
                 latitude: latitude,
                 longitude: longitude,
-                phone: phone,
-                userId: userId
+                phone: phone
             )
         }
     }

@@ -13,8 +13,8 @@ struct EstablecimientoController: RouteCollection {
                 JWTToken.guardMiddleware()
             ])
             
-            // Ruta protegida: solo dueños pueden registrar establecimientos
-            protected.grouped(RoleMiddleware(requiredRole: .dueno)).post("register", use: crearEstablecimiento)
+            // Ruta protegida: solo admins pueden registrar establecimientos (se crean sin dueño para ser reclamados)
+            protected.grouped(AdminMiddleware()).post("register", use: crearEstablecimiento)
             
             // Ver los establecimientos favoritos
             protected.post("getAll", "favoritos", use: getFavoritesEstablisments)
@@ -48,29 +48,19 @@ extension EstablecimientoController {
         return establecimientos.map { $0.toPublic() }
     }
     
-    /// Registra un nuevo establecimiento para el usuario autenticado con rol dueño.
+    /// Registra un nuevo establecimiento sin dueño. Solo accesible para administradores.
+    /// El dueño real deberá reclamarlo después mediante el flujo de ClaimRequest.
     @Sendable
-    func crearEstablecimiento(req: Request) async throws ->  Establecimiento.List{
-        
-        // 1. Extraer el token JWT del request (cabecera Authorization)
-        let token = try req.auth.require(JWTToken.self)
-        
-        // 2. Obtener el ID del usuario a partir del token
-        guard let userId = UUID(token.userID.value),
-              let _ = try await User.find(userId, on: req.db) else {
-            throw Abort(.notFound, reason: "Usuario no encontrado")
-        }
-        
-        // 2. Decodificar el contenido enviado en el body de la petición (formato JSON)
+    func crearEstablecimiento(req: Request) async throws -> Establecimiento.List {
+        // 1. Decodificar el contenido enviado en el body de la petición (formato JSON)
         let create = try req.content.decode(Establecimiento.Create.self)
-        
-        // 3. Convertir los datos del formulario a un modelo de Establecimiento y asociarle el userID
-        let establecimiento = create.toModel(userId: userId)
-        
-        // 4. Guardar el establecimiento recién creado en la base de datos
+
+        // 2. Crear el establecimiento sin asignar dueño (user_id = nil)
+        let establecimiento = create.toModel()
+
+        // 3. Guardar en la base de datos
         try await establecimiento.save(on: req.db)
-        
-        // 7. Retornamos establecimiento con su ID
+
         return establecimiento.toList()
     }
     
