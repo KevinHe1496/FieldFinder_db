@@ -364,40 +364,67 @@ extension EstablecimientoController {
         return updateEstablecimiento.toPublic()
     }
     
-    /// Permite a un usuario autenticado reclamar un establecimiento que no tiene dueño.
+    /// Recibe la solicitud formal de un usuario para reclamar un establecimiento sin dueño.
+    ///
+    /// En lugar de asignar la propiedad directamente, se crea un `ClaimRequest` con estado `pendiente`
+    /// que un administrador deberá revisar y aprobar/rechazar desde los endpoints de `/api/claims`.
+    ///
+    /// - Body requerido: `{ "telefonoContacto": "...", "mensaje": "..." }`
+    /// - Retorna 201 Created con la solicitud creada en formato público.
     @Sendable
-    func reclamarEstablecimiento(req: Request) async throws -> HTTPStatus {
+    func reclamarEstablecimiento(req: Request) async throws -> ClaimRequest.Public {
         // 1. Validar el token JWT y obtener el ID del usuario
         let token = try req.auth.require(JWTToken.self)
-        guard let userId = UUID(token.userID.value) else {
-            throw Abort(.unauthorized, reason: "Token inválido.")
+        guard let userId = UUID(token.userID.value),
+              let user = try await User.find(userId, on: req.db) else {
+            throw Abort(.unauthorized, reason: "Token inválido o usuario no encontrado.")
         }
-        
+
         // 2. Obtener el ID del establecimiento desde la URL
         guard let establecimientoID = req.parameters.get("establecimientoID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "ID del establecimiento inválido.")
         }
-        
+
         // 3. Buscar el establecimiento
         guard let establecimiento = try await Establecimiento.find(establecimientoID, on: req.db) else {
             throw Abort(.notFound, reason: "Establecimiento no encontrado.")
         }
-        
-        // 4. VERIFICAR SI YA ESTÁ RECLAMADO
+
+        // 4. Verificar que el establecimiento no tenga dueño todavía
         guard establecimiento.$user.id == nil else {
             throw Abort(.conflict, reason: "Este establecimiento ya tiene dueño.")
         }
-        
-        // (Opcional) 4.1. Verificar si el usuario tiene el rol correcto (.dueno)
-        // Si tienes esa validación, puedes cargar el usuario y verificar su rol aquí.
-        
-        // 5. Asignar el dueño al establecimiento
-        establecimiento.$user.id = userId
-        
-        // 6. Guardar los cambios
-        try await establecimiento.save(on: req.db)
-        
-        return .ok
+
+        // 5. Verificar que el usuario no tenga ya una solicitud pendiente para este establecimiento
+        let yaExisteSolicitud = try await ClaimRequest.query(on: req.db)
+            .filter(\.$user.$id == userId)
+            .filter(\.$establecimiento.$id == establecimientoID)
+            .filter(\.$status == .pendiente)
+            .count()
+
+        guard yaExisteSolicitud == 0 else {
+            throw Abort(.conflict, reason: "Ya tienes una solicitud pendiente para este establecimiento.")
+        }
+
+        // 6. Decodificar el formulario enviado por el usuario
+        let formData = try req.content.decode(ClaimRequest.Create.self)
+
+        // 7. Crear la solicitud de reclamación con estado pendiente
+        let claim = ClaimRequest(
+            userID: userId,
+            establecimientoID: establecimientoID,
+            telefonoContacto: formData.telefonoContacto,
+            mensaje: formData.mensaje
+        )
+        try await claim.save(on: req.db)
+
+        // 8. Cargar relaciones para construir la respuesta pública
+        claim.$user.value = user
+        claim.$establecimiento.value = establecimiento
+
+        req.logger.info("Nueva solicitud de reclamación: user=\(userId) establecimiento=\(establecimientoID)")
+
+        return claim.toPublic()
     }
 }
 

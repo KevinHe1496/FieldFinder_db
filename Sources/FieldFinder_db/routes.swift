@@ -11,6 +11,7 @@ func routes(_ app: Application) throws {
         try builder.register(collection: UserController())
         try builder.register(collection: EstablecimientoController())
         try builder.register(collection: CanchaController())
+        try builder.register(collection: ClaimRequestController())
     }
     
 }
