@@ -8,6 +8,13 @@ enum ClaimStatus: String, Codable {
     case rechazada   // Rechazada por el administrador
 }
 
+/// Relación del reclamante con el establecimiento.
+enum RelacionConEstablecimiento: String, Codable {
+    case propietario
+    case administrador
+    case representante
+}
+
 /// Modelo que representa la solicitud formal de un usuario para reclamar la propiedad de un establecimiento.
 /// Un establecimiento puede tener múltiples solicitudes (de distintos usuarios), pero solo una puede aprobarse.
 final class ClaimRequest: Model, @unchecked Sendable {
@@ -33,6 +40,18 @@ final class ClaimRequest: Model, @unchecked Sendable {
     @Field(key: "mensaje")
     var mensaje: String
 
+    /// Número de cédula o RIF del negocio para verificación
+    @Field(key: "documento_identidad")
+    var documentoIdentidad: String
+
+    /// Relación del reclamante con el establecimiento
+    @Field(key: "relacion_con_establecimiento")
+    var relacionConEstablecimiento: RelacionConEstablecimiento
+
+    /// URL de redes sociales del negocio (opcional)
+    @OptionalField(key: "redes_sociales")
+    var redesSociales: String?
+
     /// Estado actual de la solicitud
     @Field(key: "status")
     var status: ClaimStatus
@@ -51,6 +70,9 @@ final class ClaimRequest: Model, @unchecked Sendable {
         establecimientoID: UUID,
         telefonoContacto: String,
         mensaje: String,
+        documentoIdentidad: String,
+        relacionConEstablecimiento: RelacionConEstablecimiento,
+        redesSociales: String? = nil,
         status: ClaimStatus = .pendiente
     ) {
         self.id = id
@@ -58,6 +80,9 @@ final class ClaimRequest: Model, @unchecked Sendable {
         self.$establecimiento.id = establecimientoID
         self.telefonoContacto = telefonoContacto
         self.mensaje = mensaje
+        self.documentoIdentidad = documentoIdentidad
+        self.relacionConEstablecimiento = relacionConEstablecimiento
+        self.redesSociales = redesSociales
         self.status = status
     }
 }

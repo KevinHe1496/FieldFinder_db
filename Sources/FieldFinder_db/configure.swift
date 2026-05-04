@@ -50,6 +50,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CanchaFotoMigration())
     app.migrations.add(UserFavoriteMigration())
     app.migrations.add(ClaimRequestMigration())
+    app.migrations.add(ClaimRequestAddFieldsMigration())
     app.asyncCommands.use(SeedCanchasCommand(), as: "seed-canchas")
     
     

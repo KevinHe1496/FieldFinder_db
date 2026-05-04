@@ -404,7 +404,10 @@ extension EstablecimientoController {
             userID: userId,
             establecimientoID: establecimientoID,
             telefonoContacto: formData.telefonoContacto,
-            mensaje: formData.mensaje
+            mensaje: formData.mensaje,
+            documentoIdentidad: formData.documentoIdentidad,
+            relacionConEstablecimiento: formData.relacionConEstablecimiento,
+            redesSociales: formData.redesSociales
         )
         try await claim.save(on: req.db)
 
