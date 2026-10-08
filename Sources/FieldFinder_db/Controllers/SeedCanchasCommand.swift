@@ -48,6 +48,25 @@ struct SeedCanchasCommand: AsyncCommand {
         "canchas de futbol San Rafael Capelo",
     ]
 
+    /// Caracteres que pueden ir sin codificar en el pagetoken (RFC 3986 "unreserved").
+    static let tokenAllowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+
+    /// Lugares que Google devuelve pero no son canchas para alquilar por horas.
+    static let palabrasExcluidas: [String] = [
+        "academia", "escuela", "formativ", "formacion", "formación", "club profesional",
+    ]
+
+    /// Centro de Quito. Se usa para sesgar la búsqueda y descartar resultados lejanos
+    /// (Google a veces devuelve lugares de otras ciudades con el mismo nombre de barrio).
+    static let quitoLat = -0.1807
+    static let quitoLng = -78.4678
+    static let radioMaxKm = 45.0
+
+    static func esExcluido(_ nombre: String) -> Bool {
+        let n = nombre.lowercased()
+        return palabrasExcluidas.contains { n.contains($0) }
+    }
+
     func run(using context: CommandContext, signature: Signature) async throws {
         let app = context.application
         let db = app.db
@@ -74,6 +93,8 @@ struct SeedCanchasCommand: AsyncCommand {
         var creados = 0
         var duplicados = 0
         var noOperativos = 0
+        var excluidos = 0
+        var lejanos = 0
 
         for query in queries {
             console.print("\n🔎 \(query)")
@@ -82,6 +103,20 @@ struct SeedCanchasCommand: AsyncCommand {
             for place in places {
                 if let status = place.business_status, status != "OPERATIONAL" {
                     noOperativos += 1
+                    continue
+                }
+                if Self.esExcluido(place.name) {
+                    excluidos += 1
+                    console.print("   - (excluido) \(place.name)")
+                    continue
+                }
+                let km = haversineDistance(
+                    lat1: Self.quitoLat, lon1: Self.quitoLng,
+                    lat2: place.geometry.location.lat, lon2: place.geometry.location.lng
+                )
+                if km > Self.radioMaxKm {
+                    lejanos += 1
+                    console.print("   - (fuera de zona, \(Int(km)) km) \(place.name)")
                     continue
                 }
                 guard !vistos.contains(place.place_id) else {
@@ -119,7 +154,7 @@ struct SeedCanchasCommand: AsyncCommand {
         }
 
         let verbo = signature.dryRun ? "se importarían" : "se insertaron"
-        console.print("\n🎉 Listo: \(creados) \(verbo), \(duplicados) duplicado(s) omitido(s), \(noOperativos) no operativo(s) omitido(s).")
+        console.print("\n🎉 Listo: \(creados) \(verbo), \(duplicados) duplicado(s) omitido(s), \(noOperativos) no operativo(s) omitido(s), \(excluidos) academia(s)/escuela(s) excluida(s), \(lejanos) fuera de zona.")
         if !signature.dryRun && creados > 0 {
             console.print("   Revisa la lista: Google a veces devuelve tiendas deportivas o escuelas que no son canchas.")
         }
@@ -137,15 +172,17 @@ struct SeedCanchasCommand: AsyncCommand {
         let baseURL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
         var results: [GooglePlace] = []
-        var url = "\(baseURL)?query=\(encodedQuery)&region=ec&language=es&key=\(apiKey)"
+        var url = "\(baseURL)?query=\(encodedQuery)&location=\(Self.quitoLat),\(Self.quitoLng)&radius=40000&region=ec&language=es&key=\(apiKey)"
 
         for page in 1...maxPages {
             var data = try await app.client.get(URI(string: url)).content.decode(GooglePlacesResponse.self)
 
-            // El next_page_token tarda unos segundos en activarse; si aún no está listo, Google
-            // responde INVALID_REQUEST. Esperamos y reintentamos una vez.
-            if page > 1 && data.status == "INVALID_REQUEST" {
-                try await Task.sleep(nanoseconds: 3_000_000_000)
+            // El next_page_token tarda unos segundos en activarse; mientras tanto Google responde
+            // INVALID_REQUEST. Reintentamos hasta 4 veces con esperas crecientes.
+            var intento = 0
+            while page > 1 && data.status == "INVALID_REQUEST" && intento < 4 {
+                intento += 1
+                try await Task.sleep(nanoseconds: UInt64(intento) * 2_000_000_000)
                 data = try await app.client.get(URI(string: url)).content.decode(GooglePlacesResponse.self)
             }
 
@@ -161,8 +198,10 @@ struct SeedCanchasCommand: AsyncCommand {
             }
 
             guard let token = data.next_page_token, page < maxPages else { break }
-            url = "\(baseURL)?pagetoken=\(token)&key=\(apiKey)"
-            try await Task.sleep(nanoseconds: 2_000_000_000)
+            // El token puede traer caracteres como + / = que hay que codificar, o Google lo rechaza.
+            guard let encodedToken = token.addingPercentEncoding(withAllowedCharacters: Self.tokenAllowed) else { break }
+            url = "\(baseURL)?pagetoken=\(encodedToken)&key=\(apiKey)"
+            try await Task.sleep(nanoseconds: 3_000_000_000)
         }
         return results
     }
