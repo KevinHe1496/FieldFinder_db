@@ -56,6 +56,12 @@ struct SeedCanchasCommand: AsyncCommand {
         "academia", "escuela", "formativ", "formacion", "formación", "club profesional",
     ]
 
+    /// Centro de Quito. Se usa para sesgar la búsqueda y descartar resultados lejanos
+    /// (Google a veces devuelve lugares de otras ciudades con el mismo nombre de barrio).
+    static let quitoLat = -0.1807
+    static let quitoLng = -78.4678
+    static let radioMaxKm = 45.0
+
     static func esExcluido(_ nombre: String) -> Bool {
         let n = nombre.lowercased()
         return palabrasExcluidas.contains { n.contains($0) }
@@ -88,6 +94,7 @@ struct SeedCanchasCommand: AsyncCommand {
         var duplicados = 0
         var noOperativos = 0
         var excluidos = 0
+        var lejanos = 0
 
         for query in queries {
             console.print("\n🔎 \(query)")
@@ -101,6 +108,15 @@ struct SeedCanchasCommand: AsyncCommand {
                 if Self.esExcluido(place.name) {
                     excluidos += 1
                     console.print("   - (excluido) \(place.name)")
+                    continue
+                }
+                let km = haversineDistance(
+                    lat1: Self.quitoLat, lon1: Self.quitoLng,
+                    lat2: place.geometry.location.lat, lon2: place.geometry.location.lng
+                )
+                if km > Self.radioMaxKm {
+                    lejanos += 1
+                    console.print("   - (fuera de zona, \(Int(km)) km) \(place.name)")
                     continue
                 }
                 guard !vistos.contains(place.place_id) else {
@@ -138,7 +154,7 @@ struct SeedCanchasCommand: AsyncCommand {
         }
 
         let verbo = signature.dryRun ? "se importarían" : "se insertaron"
-        console.print("\n🎉 Listo: \(creados) \(verbo), \(duplicados) duplicado(s) omitido(s), \(noOperativos) no operativo(s) omitido(s), \(excluidos) academia(s)/escuela(s) excluida(s).")
+        console.print("\n🎉 Listo: \(creados) \(verbo), \(duplicados) duplicado(s) omitido(s), \(noOperativos) no operativo(s) omitido(s), \(excluidos) academia(s)/escuela(s) excluida(s), \(lejanos) fuera de zona.")
         if !signature.dryRun && creados > 0 {
             console.print("   Revisa la lista: Google a veces devuelve tiendas deportivas o escuelas que no son canchas.")
         }
@@ -156,7 +172,7 @@ struct SeedCanchasCommand: AsyncCommand {
         let baseURL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
         var results: [GooglePlace] = []
-        var url = "\(baseURL)?query=\(encodedQuery)&region=ec&language=es&key=\(apiKey)"
+        var url = "\(baseURL)?query=\(encodedQuery)&location=\(Self.quitoLat),\(Self.quitoLng)&radius=40000&region=ec&language=es&key=\(apiKey)"
 
         for page in 1...maxPages {
             var data = try await app.client.get(URI(string: url)).content.decode(GooglePlacesResponse.self)
