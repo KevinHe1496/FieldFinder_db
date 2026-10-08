@@ -52,6 +52,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(ClaimRequestMigration())
     app.migrations.add(ClaimRequestAddFieldsMigration())
     app.migrations.add(EstablecimientoGooglePlaceIDMigration())
+    app.migrations.add(EstablecimientoUserIDOptionalMigration())
     app.asyncCommands.use(SeedCanchasCommand(), as: "seed-canchas")
     
     
