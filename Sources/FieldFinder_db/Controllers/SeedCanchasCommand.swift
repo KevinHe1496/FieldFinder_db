@@ -11,7 +11,9 @@ import Fluent
 /// ```
 ///
 /// Reglas:
-/// - Cada búsqueda trae hasta 3 páginas (máx. 60 resultados por búsqueda, límite de Google).
+/// - Cada búsqueda intenta traer hasta 3 páginas. En la práctica Google responde
+///   INVALID_REQUEST a la página 2 (probado también con curl), así que la cobertura se logra
+///   con muchas búsquedas por sector en vez de paginar.
 /// - Se guarda el `place_id` de Google, así que correrlo varias veces no crea duplicados.
 /// - Los datos que Google no da (servicios, teléfono, canchas, precio) se dejan vacíos/en false
 ///   en lugar de inventarlos. El dueño los completa al reclamar el establecimiento.
@@ -36,16 +38,34 @@ struct SeedCanchasCommand: AsyncCommand {
 
     /// Zonas por defecto. Google limita cada búsqueda a 60 resultados, por eso se divide la ciudad.
     static let defaultQueries: [String] = [
+        // Quito urbano por sectores
         "canchas de futbol Quito norte",
         "canchas de futbol Quito centro",
         "canchas de futbol Quito sur",
         "canchas sinteticas Quito",
+        "canchas sinteticas Carcelen",
+        "canchas sinteticas Cotocollao Ponceano",
+        "canchas sinteticas Kennedy Condado",
+        "canchas sinteticas Iñaquito Carolina",
+        "canchas sinteticas Bellavista Batan",
+        "canchas sinteticas La Floresta Vicentina",
+        "canchas sinteticas Chillogallo Quitumbe",
+        "canchas sinteticas Solanda Magdalena",
+        "canchas sinteticas Guamani Turubamba",
+        // Otros formatos
+        "futbol 5 Quito",
+        "cancha de indor Quito",
+        "cancha cubierta futbol Quito",
+        // Norte extremo
         "canchas de futbol Calderon Carapungo",
         "canchas de futbol Pomasqui San Antonio de Pichincha",
+        // Valles
         "canchas de futbol Cumbaya Tumbaco",
+        "canchas sinteticas Puembo Pifo Tababela",
         "canchas de futbol Sangolqui",
         "canchas de futbol Conocoto",
         "canchas de futbol San Rafael Capelo",
+        "canchas sinteticas Amaguaña Alangasi",
     ]
 
     /// Caracteres que pueden ir sin codificar en el pagetoken (RFC 3986 "unreserved").
