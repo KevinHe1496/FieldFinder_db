@@ -98,23 +98,37 @@ extension ClaimRequestController {
             throw Abort(.conflict, reason: "El establecimiento ya tiene dueño. Rechaza esta solicitud manualmente.")
         }
 
-        // 4. Asignar el dueño al establecimiento
-        claim.establecimiento.$user.id = claim.$user.id
-        try await claim.establecimiento.save(on: req.db)
+        guard let reclamante = try await User.find(claim.$user.id, on: req.db) else {
+            throw Abort(.notFound, reason: "El usuario que envió la solicitud ya no existe.")
+        }
 
-        // 5. Marcar esta solicitud como aprobada
-        claim.status = .aprobada
-        try await claim.save(on: req.db)
+        // Todo en una transacción: o se aplica completo o no se aplica nada.
+        try await req.db.transaction { db in
+            // 4. Asignar el dueño al establecimiento
+            claim.establecimiento.$user.id = reclamante.id
+            try await claim.establecimiento.save(on: db)
 
-        // 6. Rechazar automáticamente todas las demás solicitudes pendientes para el mismo establecimiento
-        let otrassPendientes = try await ClaimRequest.query(on: req.db)
-            .filter(\.$establecimiento.$id == claim.$establecimiento.id)
-            .filter(\.$status == .pendiente)
-            .all()
+            // 5. Convertir al reclamante en dueño. Sin esto, las rutas protegidas con
+            //    RoleMiddleware(.dueno) (editar establecimiento, registrar canchas) le darían 403.
+            if reclamante.rol != .dueno {
+                reclamante.rol = .dueno
+                try await reclamante.save(on: db)
+            }
 
-        for otra in otrassPendientes {
-            otra.status = .rechazada
-            try await otra.save(on: req.db)
+            // 6. Marcar esta solicitud como aprobada
+            claim.status = .aprobada
+            try await claim.save(on: db)
+
+            // 7. Rechazar automáticamente todas las demás solicitudes pendientes para el mismo establecimiento
+            let otrasPendientes = try await ClaimRequest.query(on: db)
+                .filter(\.$establecimiento.$id == claim.$establecimiento.id)
+                .filter(\.$status == .pendiente)
+                .all()
+
+            for otra in otrasPendientes {
+                otra.status = .rechazada
+                try await otra.save(on: db)
+            }
         }
 
         return .ok

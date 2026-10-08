@@ -9,3 +9,7 @@ db.sqlite
 .env
 .env.*
 !.env.example
+
+# Llaves privadas (p8, certificados). Nunca subirlas al repo.
+secrets/
+*.p8

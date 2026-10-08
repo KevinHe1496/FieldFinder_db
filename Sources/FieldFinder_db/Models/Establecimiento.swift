@@ -44,6 +44,11 @@ final class Establecimiento: Model, @unchecked Sendable {
     @Field(key: "phone")
     var phone: String
     
+    /// ID del lugar en Google Places. Solo se llena en establecimientos importados con `seed-canchas`
+    /// y sirve para no duplicarlos al volver a correr el comando.
+    @OptionalField(key: "google_place_id")
+    var googlePlaceId: String?
+    
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
     
@@ -75,7 +80,8 @@ final class Establecimiento: Model, @unchecked Sendable {
         latitude: Double,
         longitude: Double,
         phone: String,
-        userId: User.IDValue? = nil
+        userId: User.IDValue? = nil,
+        googlePlaceId: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -91,6 +97,7 @@ final class Establecimiento: Model, @unchecked Sendable {
         self.longitude = longitude
         self.phone = phone
         self.$user.id = userId
+        self.googlePlaceId = googlePlaceId
     }
 
 }
