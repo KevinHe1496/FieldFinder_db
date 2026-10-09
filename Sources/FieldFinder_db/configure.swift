@@ -54,6 +54,11 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(EstablecimientoGooglePlaceIDMigration())
     app.migrations.add(EstablecimientoUserIDOptionalMigration())
     app.asyncCommands.use(SeedCanchasCommand(), as: "seed-canchas")
+    app.asyncCommands.use(ListClaimsCommand(), as: "claims")
+    app.asyncCommands.use(ApproveClaimCommand(), as: "claim-aprobar")
+    app.asyncCommands.use(RejectClaimCommand(), as: "claim-rechazar")
+    app.asyncCommands.use(ListEstablishmentsCommand(), as: "establecimientos")
+    app.asyncCommands.use(DeleteEstablishmentsCommand(), as: "establecimiento-borrar")
     
     
     if let port = Environment.get("PORT").flatMap(Int.init) {
