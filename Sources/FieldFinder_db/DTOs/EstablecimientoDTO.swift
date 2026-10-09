@@ -36,7 +36,10 @@ extension Establecimiento {
     struct Public: Content {
             let id: UUID
             let name: String
-            let ownerID: UUID? // <--- IMPORTANTE: Cámbialo a opcional (UUID?)
+            // La app iOS publicada decodifica ownerID, userName y userRol como String no opcional.
+            // Si el JSON trae null u omite la clave, falla la lista completa. Para establecimientos
+            // sin dueño se envía "" y el frontend usa `isClaimed` para saber si tiene dueño.
+            let ownerID: String
             let info: String
             let fotos: [String]
             let address: String
@@ -47,8 +50,8 @@ extension Establecimiento {
             let banos: Bool
             let duchas: Bool
             let canchas: [Cancha.Public]
-            let userName: String? // <--- Cámbialo a opcional (String?)
-            let userRol: RolUsuario? // <--- Cámbialo a opcional (RolUsuario?)
+            let userName: String
+            let userRol: String
             let latitude: Double
             let longitude: Double
             let phone: String
@@ -63,7 +66,7 @@ extension Establecimiento {
                 .Public(
                     id: self.id!,
                     name: self.name,
-                    ownerID: self.$user.id, // Ya es opcional gracias a @OptionalParent
+                    ownerID: self.$user.id?.uuidString ?? "",
                     info: self.info,
                     fotos: self.fotos.map { $0.url },
                     address: self.address,
@@ -76,8 +79,8 @@ extension Establecimiento {
                     canchas: self.canchas.map({ cancha in
                         cancha.toPublic()
                     }),
-                    userName: self.user?.name, // Usa ? porque user puede ser nil
-                    userRol: self.user?.rol,   // Usa ? porque user puede ser nil
+                    userName: self.user?.name ?? "",
+                    userRol: self.user?.rol.rawValue ?? "",
                     latitude: self.latitude,
                     longitude: self.longitude,
                     phone: self.phone,
